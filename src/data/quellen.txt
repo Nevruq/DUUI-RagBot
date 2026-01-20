@@ -1,0 +1,7 @@
+Cassis Repo; Typesytem : https://cassis.readthedocs.io/en/latest/_modules/cassis/typesystem.html
+Code Chunker: https://github.com/CintraAI/code-chunker
+
+
+Für RAG nutze HYDE 
+    - Lass LLM eine Antwort geben und mit dieser Hypo RAG nutzten
+    - Wenn das Thema dem Modell nicht bekannt ist dann schlechte Resultate
