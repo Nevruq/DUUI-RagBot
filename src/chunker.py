@@ -17,11 +17,109 @@ from typing import List, Dict, Optional, Tuple
 import hashlib
 import ollama
 
+LLM_DISABLED = os.getenv("LLM_DISABLE", "").lower() in {"1", "true", "yes"}
 
 @dataclass
 class CodeChunk:
     text: str
-    meta: Dict[str, object]
+    file: str
+    language: str
+    symbol_type: str
+    symbol_name: str
+    start_line: int
+    end_line: int
+    code_description: str
+    keywords: List[str]
+
+    @property
+    def meta(self) -> Dict[str, object]:
+        return {
+            "code": self.text,
+            "file": self.file,
+            "language": self.language,
+            "symbol_type": self.symbol_type,
+            "symbol_name": self.symbol_name,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "code_description": self.code_description,
+            "keywords": ", ".join(self.keywords),
+            #TODO implementiere Intent attribut
+        }
+
+    def gen_embedding_meta(self):
+        """
+        First approach for Embedding: Meta(language, code_description, keywords) #todo vergleiche wie mit code
+        """
+        embedding_string = f"""
+            name: {self.file}
+            summary: {self.code_description}
+            keywords: {self.keywords}
+        """
+        # Embedding using ollama model
+        return ollama.embed(
+                    model='mxbai-embed-large',
+                    input=embedding_string
+                    ).embeddings[0]
+
+
+    def gen_embedding_code(self):
+        """
+        First approach for Embedding: Meta(language, code_description, keywords) #todo vergleiche wie mit code
+        """
+        #TODO
+        embedding_string = f"""
+        
+        """
+
+    def to_chroma_item(
+        self,
+        *,
+        id_mode: str = "stable_hash",
+        id_prefix: str = "code",
+    ) -> Dict[str, object]:
+        """
+        Convert one code chunk (+metadata) into a Chroma-ready item:
+          - id: str
+          - document: str
+          - metadata: dict
+        """
+        file_path = str(self.file)
+        symbol_type = str(self.symbol_type)
+        symbol_name = str(self.symbol_name)
+        start_line = int(self.start_line)
+        end_line = int(self.end_line)
+        language = str(self.language)
+        code_description = str(self.code_description)
+        keywords = str(", ".join(self.keywords))
+
+        # Build deterministic ID
+        if id_mode == "symbol_lines":
+            raw_id = f"{id_prefix}::{file_path}::{symbol_type}::{symbol_name}::{start_line}-{end_line}"
+            chunk_id = raw_id.replace("\\", "/")
+        elif id_mode == "stable_hash":
+            base = f"{file_path}|{symbol_type}|{symbol_name}|{start_line}|{end_line}|{language}|{self.text}"
+            h = hashlib.sha1(base.encode("utf-8")).hexdigest()[:24]
+            chunk_id = f"{id_prefix}::{h}"
+        else:
+            raise ValueError("id_mode must be 'stable_hash' or 'symbol_lines'")
+
+        chroma_meta = {
+            "file": file_path.replace("\\", "/"),
+            "language": language,
+            "symbol_type": symbol_type,
+            "symbol_name": symbol_name,
+            "start_line": start_line,
+            "end_line": end_line,
+            "code_description": code_description,
+            "keywords": keywords,
+        }
+
+        return {
+            "id": chunk_id,
+            "embedding": self.gen_embedding_meta(),
+            "document": self.text,
+            "metadata": chroma_meta
+        }
 
 
 def _safe_read(path: str) -> str:
@@ -103,80 +201,12 @@ def _slice_lines(lines: List[str], start_line: int, end_line: int) -> str:
 from typing import Any
 
 def chunk_to_chroma_item(
-    chunk_text: str,
-    meta: Dict[str, Any],
+    chunk: CodeChunk,
     *,
-    id_mode: str = "stable_hash",   # "stable_hash" or "symbol_lines"
+    id_mode: str = "stable_hash",
     id_prefix: str = "code"
 ) -> Dict[str, Any]:
-    """
-    Convert one code chunk (+metadata) into a Chroma-ready item:
-      - id: str
-      - document: str
-      - metadata: dict
-
-    Returns a dict you can later batch into:
-      collection.add(ids=[...], documents=[...], metadatas=[...])
-
-    Parameters
-    ----------
-    chunk_text : str
-        The chunk content.
-    meta : dict
-        Chunk metadata, ideally including: file, symbol_type, symbol_name, start_line, end_line, language
-    id_mode : str
-        - "symbol_lines": deterministic id based on file/symbol/lines
-        - "stable_hash": deterministic hash of key fields + chunk text
-    id_prefix : str
-        Prefix for the id (useful when mixing sources).
-    """
-    file_path = str(meta.get("file", "unknown_file"))
-    symbol_type = str(meta.get("symbol_type", "unknown_type"))
-    symbol_name = str(meta.get("symbol_name", "unknown_symbol"))
-    start_line = int(meta.get("start_line", 0))
-    end_line = int(meta.get("end_line", 0))
-    language = str(meta.get("language", "python"))
-
-    # Build deterministic ID
-    if id_mode == "symbol_lines":
-        # Good when file+symbol+line spans are stable across runs
-        raw_id = f"{id_prefix}::{file_path}::{symbol_type}::{symbol_name}::{start_line}-{end_line}"
-        # sanitize a bit for Chroma
-        chunk_id = raw_id.replace("\\", "/")
-    elif id_mode == "stable_hash":
-        # More robust when line numbers might shift; still deterministic for identical inputs
-        base = f"{file_path}|{symbol_type}|{symbol_name}|{start_line}|{end_line}|{language}|{chunk_text}"
-        h = hashlib.sha1(base.encode("utf-8")).hexdigest()[:24]
-        chunk_id = f"{id_prefix}::{h}"
-    else:
-        raise ValueError("id_mode must be 'stable_hash' or 'symbol_lines'")
-
-    # Ensure metadata is JSON-serializable and compact
-    chroma_meta = {
-        "file": file_path.replace("\\", "/"),
-        "language": language,
-        "symbol_type": symbol_type,
-        "symbol_name": symbol_name,
-        "start_line": start_line,
-        "end_line": end_line,
-    }
-
-    # Optionally carry through extra metadata keys
-    for k, v in meta.items():
-        if k in chroma_meta:
-            continue
-        # keep only simple JSON-safe values
-        if isinstance(v, (str, int, float, bool)) or v is None:
-            chroma_meta[k] = v
-        elif isinstance(v, (list, tuple)) and all(isinstance(x, (str, int, float, bool)) or x is None for x in v):
-            chroma_meta[k] = list(v)
-        # else: skip complex objects
-
-    return {
-        "id": chunk_id,
-        "document": chunk_text,
-        "metadata": chroma_meta,
-    }
+    return chunk.to_chroma_item(id_mode=id_mode, id_prefix=id_prefix)
 
 import llm_wrapper
 import utils
@@ -184,6 +214,8 @@ from pydantic import BaseModel
 
 
 def _parse_description_response(raw: str) -> dict:
+    if isinstance(raw, dict):
+        return raw
     try:
         parsed = json.loads(raw)
         if isinstance(parsed, dict):
@@ -194,27 +226,8 @@ def _parse_description_response(raw: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    description = ""
-    keywords = []
-    for line in raw.splitlines():
-        if line.lower().startswith("description:"):
-            description = line.split(":", 1)[1].strip()
-        elif line.lower().startswith("codedescription:"):
-            description = line.split(":", 1)[1].strip()
-        elif line.lower().startswith("keywords:"):
-            kw_text = line.split(":", 1)[1].strip()
-            try:
-                keywords = json.loads(kw_text)
-            except json.JSONDecodeError:
-                kw_text = kw_text.strip("[]")
-                keywords = [k.strip() for k in kw_text.split(",") if k.strip()]
-
-    if not description:
-        description = raw.strip()
-    if not isinstance(keywords, list):
-        keywords = []
-    if not keywords:
-        keywords = ["file: unknown", "code", "summary"]
+    description = "N.A"
+    keywords = ["N.A"]
 
     return {"description": description, "keywords": keywords}
 
@@ -223,19 +236,40 @@ def _gen_code_description(code: str) -> dict:
     """
     Generates a short description of a code section for the Metadata of the RAG properties.
     """
-    class metadatasRag(BaseModel):
-        codeDescription: str
-        keywords: list[str]
-
-    # Angepasste Prompt für LLM aufruf
     llm = llm_wrapper.LLMWrapper()
-
-    # load prompt 
-    prompt_code_description = utils.load_prompt_template("src/prompts/code_section_summary.txt")
-
-    response = llm.gen_response_formatted(code, metadatasRag, prompt_code_description)
-
+    response = llm.llm_code_description(code)
     return _parse_description_response(response)
+
+def _build_chunk_fields(
+    *,
+    file_path: str,
+    symbol_type: str,
+    symbol_name: str,
+    start_line: int,
+    end_line: int,
+    language: str = "python",
+    llm_data: Optional[Dict[str, object]] = None,
+) -> Dict[str, object]:
+    description = "N.A"
+    keywords = ["N.A"]
+    if llm_data:
+        description = str(llm_data.get("description", "N.A"))
+        keywords = llm_data.get("keywords", ["N.A"])
+        if isinstance(keywords, str):
+            keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+        elif not isinstance(keywords, list):
+            keywords = [str(keywords)]
+
+    return {
+        "file": file_path,
+        "language": language,
+        "symbol_type": symbol_type,
+        "symbol_name": symbol_name,
+        "start_line": start_line,
+        "end_line": end_line,
+        "code_description": description,
+        "keywords": keywords,
+    }
 
 
 def chunk_python_code(
@@ -244,11 +278,12 @@ def chunk_python_code(
     include_header: bool = True,
     header_max_lines: int = 80,
     include_methods: bool = True,
+    disable_llm: bool = False
 ) -> List[CodeChunk]:
     """
     Chunk python code into logical units: functions, classes, (optionally) methods.
 
-    Returns list of CodeChunk(text, meta).
+    Returns list of CodeChunk objects with explicit fields.
     """
     lines = _split_lines(code)
 
@@ -256,21 +291,20 @@ def chunk_python_code(
         tree = ast.parse(code)
     except SyntaxError:
         # fallback: one big chunk if code can't be parsed
+
         llm_code_description = _gen_code_description(code)
 
         return [
             CodeChunk(
                 text=code,
-                meta={
-                    "file": file_path,
-                    "language": "python",
-                    "symbol_type": "file_fallback",
-                    "symbol_name": os.path.basename(file_path),
-                    "start_line": 1,
-                    "end_line": len(lines),
-                    "code_description": llm_code_description["description"],
-                    "keywords": llm_code_description["keywords"]
-                },
+                **_build_chunk_fields(
+                    file_path=file_path,
+                    symbol_type="file_fallback",
+                    symbol_name=os.path.basename(file_path),
+                    start_line=1,
+                    end_line=len(lines),
+                    llm_data=llm_code_description,
+                ),
             )
         ]
 
@@ -294,16 +328,14 @@ def chunk_python_code(
             chunks.append(
                 CodeChunk(
                     text=text,
-                    meta={
-                        "file": file_path,
-                        "language": "python",
-                        "symbol_type": "function" if isinstance(node, ast.FunctionDef) else "async_function",
-                        "symbol_name": node.name,
-                        "start_line": start,
-                        "end_line": end,
-                        "code_description": llm_code_description["description"],
-                        "keywords": llm_code_description["keywords"]
-                    },
+                    **_build_chunk_fields(
+                        file_path=file_path,
+                        symbol_type="function" if isinstance(node, ast.FunctionDef) else "async_function",
+                        symbol_name=node.name,
+                        start_line=start,
+                        end_line=end,
+                        llm_data=llm_code_description,
+                    ),
                 )
             )
 
@@ -315,18 +347,20 @@ def chunk_python_code(
             c_start, c_end = span
             class_text = _slice_lines(lines, c_start, c_end)
 
+            text=(header + class_text) if include_header else class_text
+            llm_code_description = _gen_code_description(text)
             # Chunk for the whole class
             chunks.append(
                 CodeChunk(
-                    text=(header + class_text) if include_header else class_text,
-                    meta={
-                        "file": file_path,
-                        "language": "python",
-                        "symbol_type": "class",
-                        "symbol_name": node.name,
-                        "start_line": c_start,
-                        "end_line": c_end,
-                    },
+                    text=text,
+                    **_build_chunk_fields(
+                        file_path=file_path,
+                        symbol_type="class",
+                        symbol_name=node.name,
+                        start_line=c_start,
+                        end_line=c_end,
+                        llm_data=llm_code_description,
+                    ),
                 )
             )
 
@@ -344,16 +378,14 @@ def chunk_python_code(
                         chunks.append(
                             CodeChunk(
                                 text=text,
-                                meta={
-                                    "file": file_path,
-                                    "language": "python",
-                                    "symbol_type": "method" if isinstance(inner, ast.FunctionDef) else "async_method",
-                                    "symbol_name": f"{node.name}.{inner.name}",
-                                    "start_line": m_start,
-                                    "end_line": m_end,
-                                    "code_description": llm_code_description["description"],
-                                    "keywords": llm_code_description["keywords"]
-                                },
+                                **_build_chunk_fields(
+                                    file_path=file_path,
+                                    symbol_type="method" if isinstance(inner, ast.FunctionDef) else "async_method",
+                                    symbol_name=f"{node.name}.{inner.name}",
+                                    start_line=m_start,
+                                    end_line=m_end,
+                                    llm_data=llm_code_description,
+                                ),
                             )
                         )
 
@@ -362,14 +394,13 @@ def chunk_python_code(
         chunks.append(
             CodeChunk(
                 text=code,
-                meta={
-                    "file": file_path,
-                    "language": "python",
-                    "symbol_type": "file",
-                    "symbol_name": os.path.basename(file_path),
-                    "start_line": 1,
-                    "end_line": len(lines),
-                },
+                **_build_chunk_fields(
+                    file_path=file_path,
+                    symbol_type="file",
+                    symbol_name=os.path.basename(file_path),
+                    start_line=1,
+                    end_line=len(lines),
+                ),
             )
         )
 
@@ -400,9 +431,8 @@ if __name__ == "__main__":
         model='mxbai-embed-large',
         input='The sky is blue because of Rayleigh scattering',
     )
-    print(response.embeddings)
+    print(response.embeddings[0])
     p = "src/data/duui-uima/duui-Hate/src/main/python/duui_hate.py"
 
     #chunks = chunk_python_file(p, include_header=True, include_methods=True)
     #print(chunks)
-

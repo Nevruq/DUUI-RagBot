@@ -9,17 +9,9 @@ PROMPT_TEMPLATE_PATH = "src/prompts/gen_python_code.txt"
 
 def python_fix_code(prompt:str):
     
-    llmWrapper = llm_wrapper.LLMWrapper(model=MODEL_NAME_2)
+    llmObject = llm_wrapper.LLMWrapper()
+    response = llmObject.llm_python_code_assistant(input_user=prompt)
 
-    # Get Query results
-    query_results_output = query_results(query_input=prompt)[0]
-    print(query_results_output)
-
-    # load prompt
-    question_prompt = utils.load_prompt_template("src/prompts/context_questions.txt")
-    # make llm call
-    response = llmWrapper.gen_reponse(input_user=prompt + str(query_results_output), instructions_user=question_prompt)
-    
     return response
 
 
