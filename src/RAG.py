@@ -6,7 +6,7 @@ from utils import embed_ollama
 
 
 DATABASE_RAG = "DUUI_RAG_PYTHON"
-RAG_PATH = "chroma"
+RAG_PATH = "src/chroma"
 def init_run_db():
     client = cdb.PersistentClient("chroma")
     collection =client.get_or_create_collection(name="test_OLLAMA")
@@ -16,9 +16,9 @@ def _get_collection():
     pass
 
 
-def query_results(query_input: str, n_results: int = 5):
+def query_results(query_input: str, collection_name: str, n_results: int = 5):
     client = cdb.PersistentClient(RAG_PATH)
-    collection = client.get_or_create_collection(name=DATABASE_RAG)
+    collection = client.get_or_create_collection(name=collection_name)
 
     # use proper embedding ollama
     embedding_input = embed_ollama(query_input)

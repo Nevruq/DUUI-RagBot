@@ -13,3 +13,12 @@ def embed_ollama(input: str):
                     model='mxbai-embed-large',
                     input=input
                     ).embeddings[0]
+
+def _safe_read(path: str) -> str:
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
+
+def _split_lines(text: str) -> list[str]:
+    # keep line endings so slicing preserves formatting
+    return text.splitlines(keepends=True)

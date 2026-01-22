@@ -1,8 +1,19 @@
 # DUUI-RagBot
 
+Was ist der Use-Case?
+Definiere den Aufbau, wie man DUUI setup baut
+  - Alle komponenten die dazu gehören
+Defniere 
+
 # TODO
     - Implementiere optimizierte Embedding Methode 
+      - Überprüfe welche Sematnische Zusammensetzung (exp. descrip. + code usw.)
     - Optimierte RAG-Einträge (siehe unten)
+
+# Embedding
+  - Ollama-modell
+  - Nutze Code-Description
+  - todo: keyword search, top-k search, weitere filter
 
 
 # Ablauf RAG-Abfrage-Verbesserungen
@@ -10,7 +21,8 @@
     - Generiere Codebeschreibungen für jeden Eintrag für bessere Semantische zuordnung
     
 # Mögliche queryoptionen
-    - Key-word searching
+    - Key-word searching (konkrete query filter)
+    - Frage rewriten
     - Hybrid retrieval
     - reranker : https://jasonkang14.github.io/llm/how-to-use-llm-as-a-reranker
 

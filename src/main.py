@@ -26,8 +26,8 @@ if __name__ == "__main__":
 
 
     client = cdb.PersistentClient("src/chroma")
-    client.delete_collection(name="test_OLLAMA")
-    collection = client.get_or_create_collection(name="test_OLLAMA")
+    client.delete_collection(name="test_OLLAMA_v2")
+    collection = client.get_or_create_collection(name="test_OLLAMA_v2")
     print("Collection created!")
 
     # cast files to Chroma format

@@ -18,24 +18,45 @@ class LLMWrapper():
     def add_model(self, model:str):
         self.model = model
     
-    def llm_python_code_assistant(self, input_user: str)-> str:
+    def llm_code_assistant(self, input_user: str, collection_name: str, coding_lg: str = "python", rag_context: bool = True)-> str:
         """
         This function call instucts the Model in a certain way to assist with coding Question for DUUI and in particular python.
         """
-        prompt_code_assistant = utils.load_prompt_template("src/prompts/gen_python_code.txt")
+        prompt_code_assistant = ""
+        match coding_lg.lower():
+            case "python":
+                prompt_code_assistant = utils.load_prompt_template("src/prompts/gen_python_code.txt")
+            case "java":
+                prompt_code_assistant = utils.load_prompt_template("src/prompts/gen_java_code.txt")
 
         # format query response
-        # Todo eventuell schlauer in der query_reponse funktion zu formatieren
-        query_response = query_results(input_user)["documents"]  
-        print(query_response)    
+        query_response = {}
+        if rag_context:
+            # TODO eventuell schlauer in der query_reponse funktion zu formatieren
+            # Anpassen,dass die collection ausgewählt wreden kann
+            query_response = query_results(input_user, collection_name=collection_name)
 
-        concat_prompt = prompt_code_assistant.replace("{{user_input}}", input_user).replace("{{rag_context}}", *query_response)
+        documents = query_response.get("documents", [[]])[0] if query_response else []
+        metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
+        context_parts = []
+        for i, doc in enumerate(documents or []):
+            meta = metadatas[i] if i < len(metadatas) else {}
+            context_parts.append(f"[{i + 1}] document:\n{doc}\nmetadata:\n{meta}")
+        rag_context_text = "\n\n".join(context_parts) if context_parts else "No RAG context."
+
+        concat_prompt = (
+            prompt_code_assistant
+            .replace("{{user_input}}", input_user)
+            .replace("{{rag_context}}", rag_context_text)
+        )
 
         return self.client.responses.parse(
             model=self.model,
-            instructions="You are a DUUI coding assistant",
+            instructions="You are a DUUI assitant and answer question about.",
             input=concat_prompt
         ).output_text
+
+
     
 
     def llm_code_description(self, code: str)-> str:
@@ -59,3 +80,5 @@ class LLMWrapper():
             text_format=metadatasRag
         ).output_text
 
+
+    

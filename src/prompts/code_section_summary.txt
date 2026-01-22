@@ -18,3 +18,4 @@ Keyword rules:
 - Provide at least 3 keywords.
 - Keywords must be single-word buzzwords (no spaces).
 - At least one keyword must reference the source file (e.g., "file:duui_hate.py").
+- Keywords should be distinctive and specific to this chunk so it is easy to differentiate from other chunks.
