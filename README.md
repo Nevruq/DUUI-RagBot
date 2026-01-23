@@ -6,6 +6,7 @@ Definiere den Aufbau, wie man DUUI setup baut
 Defniere 
 
 # TODO
+    - scrape DUUI projekte
     - Implementiere optimizierte Embedding Methode 
       - Überprüfe welche Sematnische Zusammensetzung (exp. descrip. + code usw.)
     - Optimierte RAG-Einträge (siehe unten)

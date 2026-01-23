@@ -64,7 +64,7 @@ class LLMWrapper():
         Generates the Output for the code descirption in the proper Json format
         """
         class metadatasRag(BaseModel):
-            codeDescription: str
+            description: str
             keywords: list[str]
 
         # Load Prompt 
@@ -79,6 +79,8 @@ class LLMWrapper():
             input=code,
             text_format=metadatasRag
         ).output_text
+    
+    
 
 
     

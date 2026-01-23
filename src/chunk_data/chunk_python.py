@@ -151,6 +151,7 @@ def chunk_python_code(
     header_max_lines: int = 80,
     include_methods: bool = True,
     disable_llm: bool = False,
+    deferred_llm: bool = False,
 ) -> List[RAGChunk]:
     """
     Chunk python code into logical units: functions, classes, (optionally) methods.
@@ -162,7 +163,7 @@ def chunk_python_code(
     try:
         tree = ast.parse(code)
     except SyntaxError:
-        llm_code_description = _gen_code_description(code)
+        llm_code_description = None if deferred_llm else _gen_code_description(code)
         return [
             RAGChunk(
                 text=code,
@@ -190,7 +191,7 @@ def chunk_python_code(
             body_text = _slice_lines(lines, start, end)
 
             text = (header + body_text) if include_header else body_text
-            llm_code_description = _gen_code_description(text)
+            llm_code_description = None if deferred_llm else _gen_code_description(text)
 
             chunks.append(
                 RAGChunk(
@@ -214,7 +215,7 @@ def chunk_python_code(
             class_text = _slice_lines(lines, c_start, c_end)
 
             text = (header + class_text) if include_header else class_text
-            llm_code_description = _gen_code_description(text)
+            llm_code_description = None if deferred_llm else _gen_code_description(text)
             chunks.append(
                 RAGChunk(
                     text=text,
@@ -238,7 +239,7 @@ def chunk_python_code(
                         m_start, m_end = m_span
                         method_text = _slice_lines(lines, m_start, m_end)
                         text = (header + method_text) if include_header else method_text
-                        llm_code_description = _gen_code_description(text)
+                        llm_code_description = None if deferred_llm else _gen_code_description(text)
                         chunks.append(
                             RAGChunk(
                                 text=text,
@@ -267,6 +268,17 @@ def chunk_python_code(
             )
         )
 
+    if deferred_llm:
+        for chunk in chunks:
+            llm_data = _gen_code_description(chunk.text)
+            chunk.code_description = str(llm_data.get("description", "N.A"))
+            keywords = llm_data.get("keywords", ["N.A"])
+            if isinstance(keywords, str):
+                keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+            elif not isinstance(keywords, list):
+                keywords = [str(keywords)]
+            chunk.keywords = keywords
+
     return chunks
 
 
@@ -275,6 +287,7 @@ def chunk_python_file(
     include_header: bool = True,
     header_max_lines: int = 80,
     include_methods: bool = True,
+    deferred_llm: bool = False,
 ) -> List[RAGChunk]:
     code = _safe_read(path)
     return chunk_python_code(
@@ -283,4 +296,5 @@ def chunk_python_file(
         include_header=include_header,
         header_max_lines=header_max_lines,
         include_methods=include_methods,
+        deferred_llm=deferred_llm,
     )

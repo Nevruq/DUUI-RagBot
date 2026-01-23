@@ -1,18 +1,21 @@
 import unittest
 import sys
+import json
 from unittest.mock import patch
 
 sys.path.insert(1, "/home/nev/Documents/Bachelor/DUUI-RagBot/src")
 
-import chunker
+import chunk_data.rag_chunk as chunker
+import chunk_data.chunk_java as cj
 import utils
 
-TEST_FILE = "src/data/duui-uima/duui-Hate/src/main/python/duui_hate.py"
+TEST_FILE_PY = "src/data/duui-uima/duui-Hate/src/main/python/duui_hate.py"
+TEST_FILE_JAVA = "src/data/duui-uima/duui-Hate/src/test/java/org/hucompute/textimager/uima/hate/MultiTestHate.java"
 
 class TestChunker(unittest.TestCase):
 
     def test_safe_read(self):
-        code = chunker._safe_read(path=TEST_FILE)
+        code = chunker._safe_read(path=TEST_FILE_JAVA)
         self.assertIsInstance(code, str)
         self.assertTrue(code)
 
@@ -23,32 +26,17 @@ class TestChunker(unittest.TestCase):
 
         self.assertIsInstance(parsed_string, dict)
 
-
-    def test_gen_code_description(self):
-        text="def foo(x):\n    return x + 1\n"
-        result = chunker._gen_code_description(text)
-
-        # test if outputs of the LLM reponse suit the proper formatting
-        self.assertIsInstance(result, dict)
-        self.assertIn("description", result)
-        self.assertIn("keywords", result)
-        self.assertIsInstance(result["keywords"], list)
-        # When the formatting was not correct, we test for the dafault return value
-        self.assertEqual(result["description"], "N.A")
         
-    def test_chunk_python_code(self):
-        text="def foo(x):\n    return x + 1\n"
-        chunks = chunker.chunk_python_code(code=text, file_path=TEST_FILE)
-        
+    def test_chunk_java_code(self):
+        chunks = cj.chunk_java_file(path=TEST_FILE_JAVA)
         self.assertTrue(chunks)
         chunk = chunks[0]
-        # testing just one chunk
-        self.assertIsInstance(chunk, chunker.CodeChunk)
-        self.assertIn("code_description", chunk.meta)
-        self.assertIn("keywords", chunk.meta)
-        self.assertIsInstance(chunk.meta["code_description"], str)
-        self.assertIsInstance(chunk.meta["keywords"], str)
-        print(chunk)
+        print(chunk.code_description)
+        code_desc = cj._gen_code_description(chunk.text)
+        print(code_desc)
+        chunk.append_llm_data(code_desc)
+        print(chunk.code_description)
+        
 
     def test_chunk_to_chroma_item(self):
         test_chunk = chunker.CodeChunk(
@@ -65,6 +53,34 @@ class TestChunker(unittest.TestCase):
         chunk_formated = chunker.chunk_to_chroma_item(test_chunk)
         self.assertTrue(True)
         print(chunk_formated["metadata"])
+    
+    def test_to_json(self):
+        test_chunk = chunker.RAGChunk(
+            text="class Foo { void bar() {} }",
+            file="src/example.java",
+            language="java",
+            symbol_type="class",
+            symbol_name="Foo",
+            start_line=1,
+            end_line=1,
+            code_description="Simple Java class.",
+            keywords=["file:example.java", "class", "java"],
+        )
+        with patch.object(chunker.RAGChunk, "gen_embedding_meta", return_value=[0.0, 0.1]):
+            json_item = test_chunk.to_json_item()
+
+        self.assertIsInstance(json_item, dict)
+        try:
+            json.dumps(json_item)
+        except TypeError as exc:
+            self.fail(f"to_json_item returned non-JSON-serializable data: {exc}")
+        print(json_item)
+        with open("src/data/json_test_dump.txt", "a") as f:
+            f.write(json.dumps(json_item))
+    
+    def test_chunk_to_jsonl(self):
+        chunks = cj.chunk_java_file(TEST_FILE_JAVA)
+        utils.write_ragchunks_jsonl(chunks=chunks, path="src/data/jsonl_test.jsonl")
 
 
 if __name__ == "__main__":

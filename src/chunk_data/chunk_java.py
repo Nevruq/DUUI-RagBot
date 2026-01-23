@@ -131,6 +131,7 @@ def chunk_java_code(
     include_header: bool = True,
     header_max_lines: int = 80,
     include_methods: bool = True,
+    deferred_llm: bool = False,
 ) -> List[RAGChunk]:
     lines = _split_lines(code)
     header = _get_java_header(lines, max_header_lines=header_max_lines) if include_header else ""
@@ -148,7 +149,7 @@ def chunk_java_code(
             continue
         class_text = _slice_lines(lines, c_start, c_end)
         text = (header + class_text) if include_header else class_text
-        llm_data = _gen_code_description(text)
+        llm_data = None if deferred_llm else _gen_code_description(text)
 
         chunks.append(
             RAGChunk(
@@ -177,7 +178,7 @@ def chunk_java_code(
                     continue
                 method_text = _slice_lines(lines, m_start, m_end)
                 text = (header + method_text) if include_header else method_text
-                llm_data = _gen_code_description(text)
+                llm_data = None if deferred_llm else _gen_code_description(text)
                 symbol_type = "constructor" if method_name == class_name else "method"
                 chunks.append(
                     RAGChunk(
@@ -204,7 +205,7 @@ def chunk_java_code(
                     symbol_name=file_path.split("/")[-1],
                     start_line=1,
                     end_line=len(lines),
-                    language="java",
+                    language="java"
                 ),
             )
         )
@@ -217,6 +218,7 @@ def chunk_java_file(
     include_header: bool = True,
     header_max_lines: int = 80,
     include_methods: bool = True,
+    deferred_llm: bool = False,
 ) -> List[RAGChunk]:
     code = _safe_read(path)
     return chunk_java_code(
@@ -225,4 +227,5 @@ def chunk_java_file(
         include_header=include_header,
         header_max_lines=header_max_lines,
         include_methods=include_methods,
+        deferred_llm=deferred_llm,
     )

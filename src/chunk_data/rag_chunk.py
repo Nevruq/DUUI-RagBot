@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List
 import hashlib
+import json
 
 import ollama
 
@@ -44,12 +45,31 @@ class RAGChunk:
             model="mxbai-embed-large",
             input=embedding_string,
         ).embeddings[0]
+    
+    def append_llm_data(self, llm_data: str) -> None:
+        """
+        Appends LLM data afterwards for better threading
+        """
+        if isinstance(llm_data, str):
+            try:
+                llm_data = json.loads(llm_data)
+            except json.JSONDecodeError:
+                llm_data = {}
+        # gen_code_descritpion exp. {description: "..", keywords: ["a","b"]}
+        desc = llm_data.get("description", "N.A") if isinstance(llm_data, dict) else "N.A"
+        kw = llm_data.get("keywords", ["N.A"]) if isinstance(llm_data, dict) else ["N.A"]
+        if isinstance(kw, str):
+            kw = [k.strip() for k in kw.split(",") if k.strip()]
+        elif not isinstance(kw, list):
+            kw = [str(kw)]
+        self.code_description = desc
+        self.keywords = kw
 
     def to_chroma_item(
         self,
         *,
         id_mode: str = "stable_hash",
-        id_prefix: str = "code",
+        id_prefix: str = "id",
     ) -> Dict[str, object]:
         file_path = str(self.file)
         symbol_type = str(self.symbol_type)
@@ -60,6 +80,7 @@ class RAGChunk:
         code_description = str(self.code_description)
         keywords = str(", ".join(self.keywords))
 
+        #TODO überlege eine bessere hashmethode für die IDS, file_path komisch
         if id_mode == "symbol_lines":
             raw_id = f"{id_prefix}::{file_path}::{symbol_type}::{symbol_name}::{start_line}-{end_line}"
             chunk_id = raw_id.replace("\\", "/")
@@ -88,4 +109,44 @@ class RAGChunk:
             "metadata": chroma_meta,
         }
     
-    
+    def to_json_item(self,
+        *,
+        id_mode: str = "stable_hash",
+        id_prefix: str = "id",
+    ) -> Dict[str, object]:
+        """
+        Converts the RAGChunk object to a JSON
+        """
+        return self.to_chroma_item(id_mode=id_mode, id_prefix=id_prefix)
+
+
+def ragchunks_from_json_items(items: List[Dict[str, object]]) -> List[RAGChunk]:
+    """
+    Convert a list of JSONL-loaded dicts into RAGChunk objects.
+    """
+    chunks: List[RAGChunk] = []
+    for item in items:
+        document = str(item.get("document", ""))
+        metadata = item.get("metadata", {}) or {}
+        keywords = metadata.get("keywords", "")
+        if isinstance(keywords, str):
+            keywords_list = [k.strip() for k in keywords.split(",") if k.strip()]
+        elif isinstance(keywords, list):
+            keywords_list = [str(k).strip() for k in keywords if str(k).strip()]
+        else:
+            keywords_list = []
+
+        chunks.append(
+            RAGChunk(
+                text=document,
+                file=str(metadata.get("file", "")),
+                language=str(metadata.get("language", "")),
+                symbol_type=str(metadata.get("symbol_type", "")),
+                symbol_name=str(metadata.get("symbol_name", "")),
+                start_line=int(metadata.get("start_line", 0) or 0),
+                end_line=int(metadata.get("end_line", 0) or 0),
+                code_description=str(metadata.get("code_description", "N.A")),
+                keywords=keywords_list,
+            )
+        )
+    return chunks
