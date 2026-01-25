@@ -9,11 +9,13 @@ Java code chunker (regex/brace-based)
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Dict, List, Optional, Tuple
 
 import llm_wrapper
-from chunk_data.rag_chunk import RAGChunk
+import utils
+from chunk_data.rag_chunk import RAGChunk, make_repo_id
 
 
 _CLASS_RE = re.compile(
@@ -102,6 +104,8 @@ def _build_chunk_fields(
     end_line: int,
     language: str = "java",
     llm_data: Optional[Dict[str, object]] = None,
+    chunk_type: str = "code",
+    repo_id: str = "repo::unknown",
 ) -> Dict[str, object]:
     description = "N.A"
     keywords = ["N.A"]
@@ -120,8 +124,10 @@ def _build_chunk_fields(
         "symbol_name": symbol_name,
         "start_line": start_line,
         "end_line": end_line,
-        "code_description": description,
+        "description": description,
         "keywords": keywords,
+        "chunk_type": chunk_type,
+        "repo_id": repo_id,
     }
 
 
@@ -132,8 +138,13 @@ def chunk_java_code(
     header_max_lines: int = 80,
     include_methods: bool = True,
     deferred_llm: bool = False,
+    repo_root: Optional[str] = None,
+    repo_id: Optional[str] = None,
 ) -> List[RAGChunk]:
     lines = _split_lines(code)
+    if repo_root is None:
+        repo_root = utils.find_repo_root(file_path)
+    effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
     header = _get_java_header(lines, max_header_lines=header_max_lines) if include_header else ""
 
     chunks: List[RAGChunk] = []
@@ -162,6 +173,8 @@ def chunk_java_code(
                     end_line=c_end,
                     language="java",
                     llm_data=llm_data,
+                    chunk_type="java",
+                    repo_id=effective_repo_id,
                 ),
             )
         )
@@ -191,6 +204,8 @@ def chunk_java_code(
                             end_line=m_end,
                             language="java",
                             llm_data=llm_data,
+                            chunk_type="java",
+                            repo_id=effective_repo_id,
                         ),
                     )
                 )
@@ -205,7 +220,9 @@ def chunk_java_code(
                     symbol_name=file_path.split("/")[-1],
                     start_line=1,
                     end_line=len(lines),
-                    language="java"
+                    language="java",
+                    chunk_type="java",
+                    repo_id=effective_repo_id,
                 ),
             )
         )
@@ -219,6 +236,8 @@ def chunk_java_file(
     header_max_lines: int = 80,
     include_methods: bool = True,
     deferred_llm: bool = False,
+    repo_root: Optional[str] = None,
+    repo_id: Optional[str] = None,
 ) -> List[RAGChunk]:
     code = _safe_read(path)
     return chunk_java_code(
@@ -228,4 +247,6 @@ def chunk_java_file(
         header_max_lines=header_max_lines,
         include_methods=include_methods,
         deferred_llm=deferred_llm,
+        repo_root=repo_root,
+        repo_id=repo_id,
     )

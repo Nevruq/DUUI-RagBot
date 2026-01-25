@@ -14,8 +14,9 @@ import json
 import os
 from typing import Dict, List, Optional, Tuple
 
-import llm_wrapper
-from rag_chunk import RAGChunk
+import llm_wrapper as llm_wrapper
+import utils
+from chunk_data.rag_chunk import RAGChunk, make_repo_id
 
 
 def _safe_read(path: str) -> str:
@@ -121,6 +122,8 @@ def _build_chunk_fields(
     end_line: int,
     language: str = "python",
     llm_data: Optional[Dict[str, object]] = None,
+    chunk_type: str = "code",
+    repo_id: str = "repo::unknown",
 ) -> Dict[str, object]:
     description = "N.A"
     keywords = ["N.A"]
@@ -139,8 +142,10 @@ def _build_chunk_fields(
         "symbol_name": symbol_name,
         "start_line": start_line,
         "end_line": end_line,
-        "code_description": description,
+        "description": description,
         "keywords": keywords,
+        "chunk_type": chunk_type,
+        "repo_id": repo_id,
     }
 
 
@@ -152,6 +157,8 @@ def chunk_python_code(
     include_methods: bool = True,
     disable_llm: bool = False,
     deferred_llm: bool = False,
+    repo_root: Optional[str] = None,
+    repo_id: Optional[str] = None,
 ) -> List[RAGChunk]:
     """
     Chunk python code into logical units: functions, classes, (optionally) methods.
@@ -159,6 +166,9 @@ def chunk_python_code(
     Returns list of RAGChunk objects with explicit fields.
     """
     lines = _split_lines(code)
+    if repo_root is None:
+        repo_root = utils.find_repo_root(file_path)
+    effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
 
     try:
         tree = ast.parse(code)
@@ -174,6 +184,8 @@ def chunk_python_code(
                     start_line=1,
                     end_line=len(lines),
                     llm_data=llm_code_description,
+                    chunk_type="python",
+                    repo_id=effective_repo_id,
                 ),
             )
         ]
@@ -203,6 +215,8 @@ def chunk_python_code(
                         start_line=start,
                         end_line=end,
                         llm_data=llm_code_description,
+                        chunk_type="python",
+                        repo_id=effective_repo_id,
                     ),
                 )
             )
@@ -226,6 +240,8 @@ def chunk_python_code(
                         start_line=c_start,
                         end_line=c_end,
                         llm_data=llm_code_description,
+                        chunk_type="python",
+                        repo_id=effective_repo_id,
                     ),
                 )
             )
@@ -250,6 +266,8 @@ def chunk_python_code(
                                     start_line=m_start,
                                     end_line=m_end,
                                     llm_data=llm_code_description,
+                                    chunk_type="python",
+                                    repo_id=effective_repo_id,
                                 ),
                             )
                         )
@@ -264,20 +282,11 @@ def chunk_python_code(
                     symbol_name=os.path.basename(file_path),
                     start_line=1,
                     end_line=len(lines),
+                    chunk_type="python",
+                    repo_id=effective_repo_id,
                 ),
             )
         )
-
-    if deferred_llm:
-        for chunk in chunks:
-            llm_data = _gen_code_description(chunk.text)
-            chunk.code_description = str(llm_data.get("description", "N.A"))
-            keywords = llm_data.get("keywords", ["N.A"])
-            if isinstance(keywords, str):
-                keywords = [k.strip() for k in keywords.split(",") if k.strip()]
-            elif not isinstance(keywords, list):
-                keywords = [str(keywords)]
-            chunk.keywords = keywords
 
     return chunks
 
@@ -288,6 +297,8 @@ def chunk_python_file(
     header_max_lines: int = 80,
     include_methods: bool = True,
     deferred_llm: bool = False,
+    repo_root: Optional[str] = None,
+    repo_id: Optional[str] = None,
 ) -> List[RAGChunk]:
     code = _safe_read(path)
     return chunk_python_code(
@@ -297,4 +308,6 @@ def chunk_python_file(
         header_max_lines=header_max_lines,
         include_methods=include_methods,
         deferred_llm=deferred_llm,
+        repo_root=repo_root,
+        repo_id=repo_id,
     )

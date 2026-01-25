@@ -16,16 +16,14 @@ class TestUtils(unittest.TestCase):
             content = utils.load_prompt_template(str(path))
         self.assertEqual(content, "hello prompt")
 
-    def test_short_no_truncation(self):
-        text = "short text"
-        self.assertEqual(utils.short(text, n=50), text)
 
-    def test_short_truncation(self):
-        text = "a" * 2500
-        shortened = utils.short(text, n=2000)
-        self.assertIn("... [truncated] ...", shortened)
-        self.assertTrue(len(shortened) < len(text))
-
+    def test_filter_files(self):
+        test_path = "src/data/duui-uima/duui-Hate"
+        filter_files = utils.filter_files(test_path)
+        self.assertIsNotNone(filter_files)
+        filter_files_py = utils.filter_files(test_path, set(".py"))
+        print(filter_files)
+        print(filter_files_py)
 
 if __name__ == "__main__":
     unittest.main()

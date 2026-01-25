@@ -11,11 +11,19 @@ Defniere
       - Überprüfe welche Sematnische Zusammensetzung (exp. descrip. + code usw.)
     - Optimierte RAG-Einträge (siehe unten)
 
+    - Scrape ganzes REPO -> Unterteile von File zu File, welche Kategorie, behalte aber verbindung
+    - Query Routing ? -> Kategorien -> LLM_anfrage -> Ranking
+
+
 # Embedding
   - Ollama-modell
   - Nutze Code-Description
+  - INCLUDIERE README für Implementations anleitung
   - todo: keyword search, top-k search, weitere filter
 
+# Active ChromaDB collections
+  path: src/src/chroma; 1600 java files mit desrcp; name: "java_v2"
+  ~200 alle files "all_data_v1"
 
 # Ablauf RAG-Abfrage-Verbesserungen
     - Filestruktur

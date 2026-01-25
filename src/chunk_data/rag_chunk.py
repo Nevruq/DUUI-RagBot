@@ -9,6 +9,12 @@ import json
 import ollama
 
 
+def make_repo_id(repo_root: str) -> str:
+    normalized = repo_root.replace("\\", "/").rstrip("/")
+    h = hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:12]
+    return f"repo::{h}"
+
+
 @dataclass
 class RAGChunk:
     text: str
@@ -18,8 +24,10 @@ class RAGChunk:
     symbol_name: str
     start_line: int
     end_line: int
-    code_description: str
-    keywords: List[str]
+    description: str
+    keywords: str
+    chunk_type: str
+    repo_id: str
 
     @property
     def meta(self) -> Dict[str, object]:
@@ -31,14 +39,16 @@ class RAGChunk:
             "symbol_name": self.symbol_name,
             "start_line": self.start_line,
             "end_line": self.end_line,
-            "code_description": self.code_description,
-            "keywords": ", ".join(self.keywords),
+            "description": self.description,
+            "keywords": self.keywords,
+            "chunk_type": self.chunk_type,
+            "repo_id": self.repo_id,
         }
 
     def gen_embedding_meta(self):
         embedding_string = f"""
             name: {self.file}
-            summary: {self.code_description}
+            summary: {self.description}
             keywords: {self.keywords}
         """
         return ollama.embed(
@@ -62,7 +72,7 @@ class RAGChunk:
             kw = [k.strip() for k in kw.split(",") if k.strip()]
         elif not isinstance(kw, list):
             kw = [str(kw)]
-        self.code_description = desc
+        self.description = desc
         self.keywords = kw
 
     def to_chroma_item(
@@ -77,7 +87,7 @@ class RAGChunk:
         start_line = int(self.start_line)
         end_line = int(self.end_line)
         language = str(self.language)
-        code_description = str(self.code_description)
+        description = str(self.description)
         keywords = str(", ".join(self.keywords))
 
         #TODO überlege eine bessere hashmethode für die IDS, file_path komisch
@@ -98,8 +108,10 @@ class RAGChunk:
             "symbol_name": symbol_name,
             "start_line": start_line,
             "end_line": end_line,
-            "code_description": code_description,
+            "description": description,
             "keywords": keywords,
+            "chunk_type": self.chunk_type,
+            "repo_id": self.repo_id,
         }
 
         return {
@@ -145,8 +157,10 @@ def ragchunks_from_json_items(items: List[Dict[str, object]]) -> List[RAGChunk]:
                 symbol_name=str(metadata.get("symbol_name", "")),
                 start_line=int(metadata.get("start_line", 0) or 0),
                 end_line=int(metadata.get("end_line", 0) or 0),
-                code_description=str(metadata.get("code_description", "N.A")),
+                description=str(metadata.get("description", "N.A")),
                 keywords=keywords_list,
+                chunk_type=str(metadata.get("chunk_type", "code")),
+                repo_id=str(metadata.get("repo_id", "repo::unknown")),
             )
         )
     return chunks
