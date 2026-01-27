@@ -11,7 +11,8 @@ if __name__ == "__main__":
     FILTER_FILES = {".py", ".ipynb"}
     TEST_FILE = ["src/data/duui-uima/duui-Hate/src/main/python/duui_hate.py"]
 
-    client = cdb.PersistentClient("src/src/chroma")
+    import utils
+    client = cdb.PersistentClient(utils.get_rag_path())
     collection = client.get_collection("java_v2")
     emb = embed_ollama("create a pipeline for cas objects")
     print(collection.query(query_embeddings=emb)["metadatas"])

@@ -2,13 +2,13 @@
 
 import chromadb as cdb
 import ollama
-from utils import embed_ollama
+from utils import embed_ollama, get_rag_path
 
 
 DATABASE_RAG = "DUUI_RAG_PYTHON"
-RAG_PATH = "src/src/chroma"
+RAG_PATH = get_rag_path()
 def init_run_db():
-    client = cdb.PersistentClient("chroma")
+    client = cdb.PersistentClient(RAG_PATH)
     collection =client.get_or_create_collection(name="test_OLLAMA")
     collection.add()
 

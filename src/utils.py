@@ -2,6 +2,7 @@ import ollama
 import os
 import chunk_data.rag_chunk as rc
 import json
+from dotenv import load_dotenv
 
 
 def load_prompt_template(path: str) -> str:
@@ -71,14 +72,12 @@ def find_repo_root(file_path: str, markers: tuple[str, ...] = (".git", "pyprojec
         cur = parent
 
 
+def get_rag_path(default: str = "chroma") -> str:
+    load_dotenv()
+    return os.getenv("RAG_PATH", default)
 
 
-"""
 def load_jsonl_ragChunk(path: str) -> list[rc.RAGChunk]:
-    
-    Function loads JsonL and converts it to RAGChunk objects.
-    
     with open(path) as f:
         data = [json.loads(line) for line in f]
         return rc.ragchunks_from_json_items(data)
-"""
