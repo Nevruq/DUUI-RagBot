@@ -6,13 +6,14 @@ Definiere den Aufbau, wie man DUUI setup baut
 Defniere 
 
 # TODO
-    - scrape DUUI projekte
+    - scrape DUUI projekte, baue ignorecases ein damit unnögite config files nicht berücksichtigt werde 
     - Implementiere optimizierte Embedding Methode 
       - Überprüfe welche Sematnische Zusammensetzung (exp. descrip. + code usw.)
     - Optimierte RAG-Einträge (siehe unten)
 
     - Scrape ganzes REPO -> Unterteile von File zu File, welche Kategorie, behalte aber verbindung
     - Query Routing ? -> Kategorien -> LLM_anfrage -> Ranking
+    - 
 
 
 # Embedding
@@ -23,7 +24,11 @@ Defniere
 
 # Active ChromaDB collections
   path: src/src/chroma; 1600 java files mit desrcp; name: "java_v2"
-  ~200 alle files "all_data_v1"
+  ~200 alle files "all_data_v1", 
+
+# Fehlerstellen DUUI
+
+
 
 # Ablauf RAG-Abfrage-Verbesserungen
     - Filestruktur

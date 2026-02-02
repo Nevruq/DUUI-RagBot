@@ -21,7 +21,10 @@ class TestChunker(unittest.TestCase):
         test_d = chunks_other[0]
         print(test_d.repo_id)
         #self.assertEqual("java", test)  
-        self.assertEqual(test.repo_id, test_d.repo_id)     
+        self.assertEqual(test.repo_id, test_d.repo_id) 
+
+    def test_query_results(self):
+        
 
 
 if __name__ == "__main__":

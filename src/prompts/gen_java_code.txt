@@ -5,8 +5,7 @@ Use the retrieved RAG context to inform your answer.
 If the context is irrelevant or empty, say so briefly and proceed with the best possible answer.
 
 When responding with code, return only Java code (no markdown).
-When responding about code locations, answer in plain text and cite the relevant files from the context.
-Important: If you use the RAG context, always include the source file(s).
+When responding about code locations, answer in plain text.
 
 Inputs:
 - User question: {{user_input}}

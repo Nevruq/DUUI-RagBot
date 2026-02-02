@@ -81,3 +81,10 @@ def load_jsonl_ragChunk(path: str) -> list[rc.RAGChunk]:
     with open(path) as f:
         data = [json.loads(line) for line in f]
         return rc.ragchunks_from_json_items(data)
+    
+def calc_token_length(context: str) -> int:
+    """
+    A helpful rule of thumb is that one token generally corresponds to ~4 characters of text for common English text. This translates to roughly ¾ of a word (so 100 tokens ~= 75 words).
+    """
+    #TODO wenn erforderlich implementiere mit richtigem Tokenizer
+    return len(context) / 4

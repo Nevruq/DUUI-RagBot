@@ -60,26 +60,11 @@ def infer_chunk_type(path: str) -> str:
     return "other"
 
 
-def _parse_description_response(raw: str) -> dict:
-    if isinstance(raw, dict):
-        return raw
-    try:
-        parsed = json.loads(raw)
-        if isinstance(parsed, dict):
-            if "description" in parsed and "keywords" in parsed:
-                return parsed
-            if "codeDescription" in parsed and "keywords" in parsed:
-                return {"description": parsed["codeDescription"], "keywords": parsed["keywords"]}
-    except json.JSONDecodeError:
-        pass
-
-    return {"description": "N.A", "keywords": ["N.A"]}
-
 
 def _gen_file_description(text: str) -> dict:
     llm = llm_wrapper.LLMWrapper()
     response = llm.llm_other_file_description(text)
-    return _parse_description_response(response)
+    return response
 
 
 def _build_chunk_fields(

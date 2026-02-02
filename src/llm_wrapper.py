@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import chromadb as cbd
 from pydantic import BaseModel
 import utils
+import json
 from RAG import query_results
 
 MODEL_NAME_2 = "gpt-5-nano-2025-08-07"  
@@ -17,6 +18,32 @@ class LLMWrapper():
 
     def add_model(self, model:str):
         self.model = model
+
+    import json
+    def llm_rewrite_query(self, input_str) -> dict:
+        """
+        In order for better query_results the prompt from the user needs to be rewritten by
+        Returns dict with the str:description and List[str]: keywords
+        """
+        class queryDescription(BaseModel):
+            description: str
+            keywords: list[str]
+
+        template = utils.load_prompt_template("src/prompts/rewrite_query.txt")
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions="Your Task is to summarize. Given a Text ",
+            text_format=queryDescription,
+            input=input_str
+        )
+        formatted_dict = {"description": response.output_parsed.description, "keywords": response.output_parsed.keywords}
+        return formatted_dict
+
+        # calc prompt length in tokens
+
+
+        return response.output_text
+
     
     def llm_code_assistant(self, input_user: str, collection_name: str, coding_lg: str = "python", rag_context: bool = True)-> str:
         """
@@ -43,6 +70,7 @@ class LLMWrapper():
             meta = metadatas[i] if i < len(metadatas) else {}
             context_parts.append(f"[{i + 1}] document:\n{doc}\nmetadata:\n{meta}")
         rag_context_text = "\n\n".join(context_parts) if context_parts else "No RAG context."
+        print(rag_context_text)
 
         concat_prompt = (
             prompt_code_assistant
@@ -50,35 +78,62 @@ class LLMWrapper():
             .replace("{{rag_context}}", rag_context_text)
         )
 
-        return self.client.responses.parse(
+        print(utils.calc_token_length(concat_prompt))
+        response = self.client.responses.create(
             model=self.model,
             instructions="You are a DUUI assitant and answer question about.",
             input=concat_prompt
-        ).output_text
+        )
+
+        # calc prompt length in tokens
+
+
+        return response.output_text
 
 
     
 
-    def llm_code_description(self, code: str)-> str:
+    def llm_code_description(self, code: str)-> dict:
         """
         Generates the Output for the code descirption in the proper Json format
         """
         class metadatasRag(BaseModel):
             description: str
             keywords: list[str]
+            
 
         # Load Prompt 
         prompt_code_description = utils.load_prompt_template("src/prompts/code_section_summary.txt")
 
         if self.llm_disabled:
-            return str({"description": "N.A", "keywords": ["file:unknown", "code", "summary"]})
+            return {"description": "N.A", "keywords": ["file:unknown", "code", "summary"]}
         print("LLM aufruf.")
-        return self.client.responses.parse(
+        response = self.client.responses.parse(
             model=self.model,
             instructions=prompt_code_description,
             input=code,
             text_format=metadatasRag
-        ).output_text
+        ).output_parsed
+        return {"description": response.description, "keywords": response.keywords}
+    
+
+    def llm_other_file_description(self, text: str) -> str:
+        class otherFileMetadata(BaseModel):
+            description: str
+            keywords: list[str]
+
+        if self.llm_disabled:
+            return {"description": "N.A", "keywords": ["file:unknown", "noncode", "summary"]}
+
+        prompt_other_file = utils.load_prompt_template("src/prompts/other_file_summary.txt")
+
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions=prompt_other_file,
+            input=text,
+            text_format=otherFileMetadata
+        ).output_parsed
+        return {"description": response.description, "keywords": response.keywords}
     
     
 
