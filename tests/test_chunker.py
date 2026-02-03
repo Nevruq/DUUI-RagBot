@@ -2,8 +2,10 @@ import unittest
 import sys
 import json
 from unittest.mock import patch
+from pathlib import Path
 
-sys.path.insert(1, "/home/nev/Documents/Bachelor/DUUI-RagBot/src")
+# Make tests work regardless of absolute machine path: add repo `src` to sys.path
+sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "src"))
 
 import chunk_data.rag_chunk as rc
 import chunk_data.chunk_java as cj
