@@ -1,0 +1,51 @@
+EASY questions
+===============================================================================
+„Was genau macht eigentlich eine DUUI-Komponente in einer Pipeline?“
+
+„Warum braucht jedes DUUI-Projekt ein eigenes TypeSystem?“
+
+„Wofür ist die pipeline.yaml da und was passiert, wenn sie fehlt?“
+
+„Kann ich DUUI-Komponenten sowohl in Python als auch in Java schreiben?“
+
+„Warum werden DUUI-Komponenten meistens als Docker-Container ausgeführt?“
+
+„Was bedeutet es, wenn DUUI meldet, dass eine Komponente nicht gefunden wurde?“
+
+„Welche Rolle spielt das README in einem DUUI-Repository?“
+
+"Welcher Name 
+
+===============================================================================
+
+INTERMEDIATE questions
+===============================================================================
+„Meine Pipeline startet ohne Fehler, aber es kommen keine Annotationen raus – woran kann das liegen?“
+
+„Was verursacht einen TypeMismatchError zwischen zwei DUUI-Komponenten?“
+
+„Wie werden externe Ressourcen wie Modelle oder Konfigurationsdateien in DUUI eingebunden?“
+
+„Welche Angaben müssen in der Pipeline-YAML stehen, damit eine Komponente korrekt ausgeführt wird?“
+
+„Wie kann ich eine DUUI-Komponente testen, ohne die komplette Pipeline laufen zu lassen?“
+
+„Warum kann ein korrekt gebautes Docker-Image trotzdem nicht in einer DUUI-Pipeline funktionieren?“
+
+„Warum haben viele verschiedene DUUI-Repos sehr ähnliche TypeSystem-Dateien?“
+
+===============================================================================
+
+HARD questions
+=================================================================================
+„Ich habe zwei Komponenten, die beide Token-Annotationen erzeugen – wie verhindere ich im Code Konflikte?“
+
+„Warum kann ein TypeSystem-Konflikt erst zur Laufzeit auftreten, obwohl der Code vorher korrekt aussieht?“
+
+„Wie kann ich im Code sicherstellen, dass meine Komponente nur mit einem bestimmten TypeSystem kompatibel ist?“
+
+„Welche Code-Stellen sind typisch dafür verantwortlich, dass Annotationen zwar erzeugt, aber nicht persistiert werden?“
+
+„Wie kann ich in einer DUUI-Komponente gezielt Fehler werfen, sodass sie in der Pipeline sinnvoll abgefangen werden?“
+
+„Was sind typische Code-Anti-Patterns in DUUI-Komponenten, die später zu schwer auffindbaren Pipeline-Fehlern führen?“

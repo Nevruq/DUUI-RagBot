@@ -26,7 +26,8 @@ Defniere
   path: src/src/chroma; 1600 java files mit desrcp; name: "java_v2"
   ~200 alle files "all_data_v1", 
 
-# Fehlerstellen DUUI
+# Quellen DUUI
+Erklärung aufbau : https://texttechnologylab.github.io/DockerUnifiedUIMAInterface/tutorial/Sentiment
 
 
 

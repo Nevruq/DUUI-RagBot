@@ -73,26 +73,10 @@ def _slice_lines(lines: List[str], start_line: int, end_line: int) -> str:
     return "".join(lines[start_idx:end_idx])
 
 
-def _parse_description_response(raw: str) -> dict:
-    if isinstance(raw, dict):
-        return raw
-    try:
-        parsed = json.loads(raw)
-        if isinstance(parsed, dict):
-            if "description" in parsed and "keywords" in parsed:
-                return parsed
-            if "codeDescription" in parsed and "keywords" in parsed:
-                return {"description": parsed["codeDescription"], "keywords": parsed["keywords"]}
-    except json.JSONDecodeError:
-        pass
-
-    return {"description": "N.A", "keywords": ["N.A"]}
-
-
 def _gen_code_description(code: str) -> dict:
     llm = llm_wrapper.LLMWrapper()
     response = llm.llm_code_description(code)
-    return _parse_description_response(response)
+    return response
 
 
 def _build_chunk_fields(

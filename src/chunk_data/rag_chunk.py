@@ -25,7 +25,7 @@ class RAGChunk:
     start_line: int
     end_line: int
     description: str
-    keywords: str
+    keywords: list[str]
     chunk_type: str
     repo_id: str
 

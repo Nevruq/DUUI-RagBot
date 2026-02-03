@@ -7,9 +7,35 @@ Do not invent details; if something is unclear, say so briefly.
 
 Response format:
 description: <short description>
-keywords: <keyword1>, <keyword2>, <keyword3>, ...
+keywords: <label1>, <label2>, <label3>, <label4>, <label5>
 
 Keyword rules:
-- Provide at least 3 keywords.
-- Keywords must be single-word buzzwords (no spaces).
-- Keywords should be distinctive and specific to this file.
+- Select exactly 5 labels from the list below.
+- Do not invent new labels.
+- Labels must be unique (no duplicates).
+- Choose the most fitting labels for this file.
+
+Allowed labels:
+DUUI, DockerUnifiedUIMAInterface, DUUIComponent, DUUIDriver, PipelineDefinition, ComponentLifecycle,
+ExecutionContext, DependencyResolution, PipelineYAML, ComponentRegistration, PipelineValidation,
+PipelineOrchestration, PipelineExecutionOrder, TypeSystem, AnnotationType, FeatureStructure,
+TypeInheritance, TypeMapping, TypeMismatchError, NamespaceResolution, ComponentDescriptor,
+PythonComponent, JavaComponent, LuaComponent, ComponentAPI, ComponentConfiguration, RuntimeConfiguration,
+ResourceBinding, EnvironmentVariables, ModelResources, FileResources, DockerImage, Dockerfile,
+ContainerRuntime, GPUAcceleration, DistributedProcessing, ComponentNotFoundError, RuntimeError,
+InitializationError, ErrorPropagation, Logging, StackTraceAnalysis, ComponentTesting, PipelineTesting,
+UnitTests, IntegrationTests, MockComponents, ComponentREADME, ProjectStructure, ExamplePipelines,
+BuildArtifacts, CitationMetadata, HateSpeechDetection, OffensiveLanguageDetection, SentimentAnalysis,
+NamedEntityRecognition, TextClassification, NaturalLanguageInference, ReadabilityAssessment,
+RetrievalStrategy, ChunkingStrategy, Deduplication, ConditionalRetrieval, MetadataFiltering,
+HallucinationRisk, FactChecking, ToxicityDetection, EmotionClassification, GermanLanguage,
+SequenceLabeling, PartOfSpeechTagging, DependencyParsing, SyntacticParsing, SemanticRoleLabeling,
+NegationDetection, CoreferenceResolution, SentenceSegmentation, SentenceBoundaryDetection,
+ParagraphSegmentation, SpacyPipeline, StanzaPipeline, UDPipeline, CoreNLPPipeline,
+LanguageIdentification, TransformerModel, CohesionMetrics, TextComplexityEstimation,
+SurprisalEstimation, TopicModeling, BERTopic, Summarization, GazetteerLookup, EntityLinking,
+GeonamesLookup, TaxonNameDetection, BioNLP, TaxonomicNER, ReaderWriter, DataIO,
+TypeSystemConversion, FastTextModel, AITextDetection, LLM, EssayScoring, ResponseRating,
+SafetyDetection, OCRExtraction, DocumentProcessing, ImageToText, VisionLanguageModel,
+MultimodalPipeline, Multimodal, TextToImage, Vision, SpeechToText, ASR, ForcedAlignment,
+MediaDownload, AudioProcessing, CoreNLPProcessing

@@ -3,6 +3,7 @@ Rewrite the user's prompt into a concise retrieval-friendly representation.
 Create:
 1) A short description that captures the core intent.
 2) A list of keywords that maximize retrieval precision and recall.
+3) At least three subqueries that paraphrase the input in different ways to surface multiple possible questions.
 
 Guidelines:
 - Preserve the user's intent, domain, and constraints.
@@ -11,6 +12,9 @@ Guidelines:
 - Include synonyms or related terms only if they are likely helpful for retrieval.
 - Do not include sources or citations.
 - Be concise; avoid full sentences in keywords.
+- Subqueries must be different from each other and capture distinct interpretations or angles.
+- Subqueries may be slightly inferential but must stay faithful to the input.
+- Provide at least 3 subqueries.
 
 Input:
 - User prompt: {{user_input}}
@@ -18,3 +22,4 @@ Input:
 Output format (exactly):
 description: <one short sentence>
 keywords: <keyword1>, <keyword2>, <keyword3>, ...
+subqueries: <subquery1> | <subquery2> | <subquery3> | ...

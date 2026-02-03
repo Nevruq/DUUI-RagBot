@@ -11,9 +11,9 @@ COLLECTION_NAME = "all_data_v1"
 def python_fix_code(prompt: str):
     
     llmObject = llm_wrapper.LLMWrapper()
-    response = llmObject.llm_code_assistant(input_user=prompt, collection_name=COLLECTION_NAME, coding_lg="java", rag_context=True)
+    response = llmObject.llm_code_assistant(input_user=prompt, collection_name=COLLECTION_NAME, rag_context=True)
     return response
 
 
 if __name__ == "__main__":
-    print(python_fix_code("Gib mir den Code in Java um zb Hate zu analysieren"))
+    print(python_fix_code("Schreibe mir ein UIMA TypeSystem für mein neues Project, ich analysiere reden, es die RedeID den Text, sowie auf eine Hate annotation"))

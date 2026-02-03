@@ -88,3 +88,49 @@ def calc_token_length(context: str) -> int:
     """
     #TODO wenn erforderlich implementiere mit richtigem Tokenizer
     return len(context) / 4
+
+
+from lxml import etree
+
+ALLOWED_RANGES = {
+    "uima.cas.String", "uima.cas.Integer", "uima.cas.Float", "uima.cas.Boolean",
+    "uima.cas.Double", "uima.cas.Long", "uima.cas.Short", "uima.cas.Byte",
+    "uima.cas.FSArray", "uima.cas.IntegerArray", "uima.cas.FloatArray",
+    "uima.tcas.Annotation", "uima.cas.TOP"
+}
+
+from cassis import load_typesystem
+from lxml import etree
+
+def validate_typesystem(xml_text: str) -> list[str]:
+    issues = []
+    # 2) UIMA/Cassis load
+
+    try:
+        load_typesystem(xml_text.encode("utf-8"))
+    except Exception as e:
+        issues.append(f"Cassis load error: {e}")
+
+    # 3) Simple duplicate checks (optional, fast)
+    try:
+        root = etree.fromstring(xml_text.encode("utf-8"))
+        types = root.findall(".//typeDescription")
+        type_names = [t.findtext("name") for t in types]
+        dup_types = {t for t in type_names if type_names.count(t) > 1}
+        if dup_types:
+            issues.append(f"Duplicate types: {sorted(dup_types)}")
+    except Exception:
+        pass
+
+    return issues
+
+def validate_labels(labels: list[str]) -> list[str]:
+    """
+    Checks if all Labels in a List are valid and exisist in the DUUIRAG dictonary.
+    """
+    valid_labels = load_prompt_template("src/DUUIDictonary.txt")
+    filtered_labels = []
+    for label in labels:
+        if label in valid_labels:
+            filtered_labels.append(label)
+    return filtered_labels

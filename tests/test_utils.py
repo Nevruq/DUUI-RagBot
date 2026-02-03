@@ -25,5 +25,10 @@ class TestUtils(unittest.TestCase):
         print(filter_files)
         print(filter_files_py)
 
+    def test_xml_validater(self):
+        test_path = "src/data/UIMATypeSystem/src/main/resources/desc/type/TextTechnologySentimentBert.xml"
+        errors = utils.validate_typesystem(test_path)
+        self.assertEqual(len(errors), 0)
+
 if __name__ == "__main__":
     unittest.main()

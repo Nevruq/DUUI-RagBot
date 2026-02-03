@@ -141,8 +141,19 @@ class TestLLMWrapper(unittest.TestCase):
         print(type(response))
         self.assertIs(type(response), dict)
         self.assertIsNotNone(response["description"])
+        self.assertIs(list, type(response["subqueries"]))
+        self.assertGreater(len(response["subqueries"], 2))
 
 
+    def test_typesystem_builder(self):
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_typesystem_builder("Baue ein TypeSytem für mein Rede. Sie hat eine redeid ein Text, und wird auf Sentiment untersucht.", "all_data_v1")
+        print(response)
+
+    def test_code_description_labels(self):
+        file = ""
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_code_description()
 
 if __name__ == "__main__":
     unittest.main()

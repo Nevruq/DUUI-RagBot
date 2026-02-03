@@ -1,0 +1,31 @@
+[DockerLocalDriver][06580dff-9b08-481f-b8eb-06f22a114741][Docker Replication 1/1] Component lua communication layer, loading...
+[DockerLocalDriver][06580dff-9b08-481f-b8eb-06f22a114741][Docker Replication 1/1] Component lua communication layer, loaded.
+[DockerLocalDriver][06580dff-9b08-481f-b8eb-06f22a114741][Docker Replication 1/1] Container for image docker.texttechnologylab.org/duui-hate-andrazp:latest is online (URL http://127.0.0.1:32769) and seems to understand DUUI V1 format!
+org.luaj.vm2.LuaError: main:19 bad argument: string expected, got nil
+	at org.luaj.vm2.LuaValue.argerror(Unknown Source)
+	at org.luaj.vm2.LuaValue.checkstring(Unknown Source)
+	at org.luaj.vm2.Varargs.checkstring(Unknown Source)
+	at org.luaj.vm2.lib.StringLib$gmatch.invoke(Unknown Source)
+	at org.luaj.vm2.LuaClosure.execute(Unknown Source)
+	at org.luaj.vm2.LuaClosure.call(Unknown Source)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaCompiledFile.call(DUUILuaCompiledFile.java:43)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaCommunicationLayer.serialize(DUUILuaCommunicationLayer.java:48)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.driver.IDUUIInstantiatedPipelineComponent.process(IDUUIInstantiatedPipelineComponent.java:136)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.driver.DUUIDockerDriver.run(DUUIDockerDriver.java:403)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.DUUIComposer.run_pipeline(DUUIComposer.java:1723)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.DUUIComposer.run(DUUIComposer.java:1905)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.DUUIComposer.run(DUUIComposer.java:1870)
+	at org.example.testHate.main(testHate.java:46)
+Exception in thread "main" org.luaj.vm2.LuaError: main:19 bad argument: string expected, got nil
+	at org.luaj.vm2.LuaValue.argerror(Unknown Source)
+	at org.luaj.vm2.LuaValue.checkstring(Unknown Source)
+	at org.luaj.vm2.Varargs.checkstring(Unknown Source)
+	at org.luaj.vm2.lib.StringLib$gmatch.invoke(Unknown Source)
+	at org.luaj.vm2.LuaClosure.execute(Unknown Source)
+	at org.luaj.vm2.LuaClosure.call(Unknown Source)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaCompiledFile.call(DUUILuaCompiledFile.java:43)
+	at org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaCommunicationLayer.serialize(DUUILuaCommunicationLayer.java:48)
+
+
+===
+

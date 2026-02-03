@@ -24,7 +24,7 @@ class TestChunker(unittest.TestCase):
         self.assertEqual(test.repo_id, test_d.repo_id) 
 
     def test_query_results(self):
-        
+        pass
 
 
 if __name__ == "__main__":
