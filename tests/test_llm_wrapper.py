@@ -37,32 +37,36 @@ class TestLLMWrapper(unittest.TestCase):
             input="hi",
         )
 
-    def test_llm_code_description_disabled(self):
-        with patch.dict(os.environ, {"LLM_DISABLE": "1"}), \
-             patch("llm_wrapper.OpenAI") as mock_openai, \
-             patch("llm_wrapper.utils.load_prompt_template", return_value="PROMPT"):
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            wrapper = llm_wrapper.LLMWrapper()
 
-            out = wrapper.llm_code_description("code")
+    def test_llm_code_description(self):
+        test_file = """
+        class Settings(BaseSettings):
+            # Name of this annotator
+            annotator_name: str
+            # Version of this annotator
+            annotator_version: str
+            # Log level
+            log_level: str
+            # model_name
+            model_name: str
+            # Name of this annotator
+            model_version: str
+            #cach_size
+            model_cache_size: int
+            # url of the model
+            model_source: str
+            # language of the model
+            model_lang: str
+        """
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_code_description(test_file)
+        print(type(response))
+        print(response)
+        self.assertIs(type(response), dict)
+        self.assertIsNotNone(response["description"])
+        self.assertIs(list, type(response["keywords"]))
 
-        self.assertIn("N.A", out)
-        mock_client.responses.parse.assert_not_called()
 
-    def test_llm_code_description_enabled(self):
-        with patch.dict(os.environ, {"LLM_DISABLE": "false"}), \
-             patch("llm_wrapper.OpenAI") as mock_openai, \
-             patch("llm_wrapper.utils.load_prompt_template", return_value="PROMPT"):
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            mock_client.responses.parse.return_value = MagicMock(output_text="RESULT")
-            wrapper = llm_wrapper.LLMWrapper()
-
-            out = wrapper.llm_code_description("code")
-
-        self.assertEqual(out, "RESULT")
-        mock_client.responses.parse.assert_called_once()
 
     def test_llm_rewrite_query(self):
         test_query_1 = """
@@ -156,6 +160,18 @@ class TestLLMWrapper(unittest.TestCase):
         file = ""
         llm = llm_wrapper.LLMWrapper()
         response = llm.llm_code_description()
+
+    def test_lua_code_generation(self):
+        """
+        Given a Description of a new Model how, well does the LLM assist in generating the code in lua.
+        
+        :param self: Description
+        """
+        from chunk_data.chunk_lua import chunk_lua_file
+        
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_lua_code_builder("Generate a lua code for a new model for sentiment which gets a text and returns a sentiment score, positive neutral and negative which add all to 1", "lua_test", ollama_embedding=False)
+        print(response)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,119 @@
+DUUI_LABELS_CONDENSED = [
+
+    #
+        # Konfiguration / Settings
+    "Config_Settings",
+    "Config_Environment",
+    "Config_ModelParameters",
+    "Config_RuntimeParameters",
+
+    # Datenmodelle / Schema (Pydantic)
+    "Schema_RequestModel",
+    "Schema_ResponseModel",
+    "Schema_DataModel",
+    "Schema_UIMA",
+    "Schema_Metadata",
+
+    # Runtime / Infrastruktur
+    "Runtime_Initialization",
+    "Runtime_Logging",
+    "Runtime_DeviceSelection",
+    "Runtime_Concurrency",
+    "Runtime_Caching",
+
+    # Modell / ML-Logik
+    "Model_Loading",
+    "Model_Inference",
+    "Model_Caching",
+    "Model_ThreadSafety",
+
+    # Textverarbeitung
+    "Preprocessing_Text",
+    "Preprocessing_Unicode",
+
+    # DUUI / UIMA Integration
+    "DUUI_RequestHandling",
+    "DUUI_ResponseHandling",
+    "DUUI_TypeSystem",
+    "DUUI_LuaIntegration",
+
+    # API / Service Layer
+    "API_Definition",
+    "API_Endpoint",
+    "API_ErrorHandling",
+
+    # Fehlerbehandlung
+    "Error_Handling",
+    "Error_Logging"
+
+    # =========================
+    # Core / Architektur
+    # =========================
+    "DUUI",
+    "Component",
+    "Pipeline",
+    "Driver",
+    "Runtime",
+    "Execution",
+
+    # =========================
+    # Artefakt / Datei-Typ
+    # =========================
+    "Dockerfile",
+    "PythonCode",
+    "JavaCode",
+    "LuaCode",
+    "PipelineConfig",
+    "TypeSystemXML",
+    "BuildConfig",
+    "Documentation",
+    "TestCode",
+    "Logs",
+
+    # =========================
+    # Funktion / Use Case
+    # =========================
+    "ComponentImplementation",
+    "PipelineConfiguration",
+    "PipelineExecution",
+    "ModelInference",
+    "ModelIntegration",
+    "Serialization",
+    "Deserialization",
+    "TypeSystemHandling",
+    "Containerization",
+    "ServiceDeployment",
+    "Evaluation",
+    "Testing",
+    "Debugging",
+
+    # =========================
+    # Aufgabe / Aktion
+    # =========================
+    "GenerateCode",
+    "ConfigureSystem",
+    "RunComponent",
+    "MergeTypeSystems",
+    "GenerateJCas",
+    "ReadAnnotations",
+    "WriteAnnotations",
+    "CallRemoteService",
+
+    # =========================
+    # Fehler / Risiko
+    # =========================
+    "TypeMismatch",
+    "MissingJCasClass",
+    "RuntimeError",
+    "BuildError",
+    "ConnectionError",
+
+    # =========================
+    # NLP / Modell-Kontext
+    # =========================
+    "TextClassification",
+    "HateSpeechDetection",
+    "SentimentAnalysis",
+    "NER",
+    "LLM",
+]

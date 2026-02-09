@@ -126,9 +126,12 @@ def chunk_java_code(
     repo_id: Optional[str] = None,
 ) -> List[RAGChunk]:
     lines = _split_lines(code)
-    if repo_root is None:
-        repo_root = utils.find_repo_root(file_path)
-    effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
+    if repo_id:
+        effective_repo_id = repo_id
+    else:
+        if repo_root is None:
+            repo_root = utils.find_repo_root(file_path)
+        effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
     header = _get_java_header(lines, max_header_lines=header_max_lines) if include_header else ""
 
     chunks: List[RAGChunk] = []

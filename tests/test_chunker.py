@@ -88,7 +88,18 @@ class TestChunker(unittest.TestCase):
 
     def test_infer_file(self):
         chunks = rc.chunk_file(TEST_FILE_JAVA)
-        print(chunks[0].chunk_type)        
+        print(chunks[0].chunk_type)  
+
+
+    def test_lua_chunking(self):
+        TEST_FILE_LUA = "src/data/duui-uima/duui-Hate/src/main/python/duui_hate.lua"
+        from chunk_data import chunk_lua
+
+        chunks = chunk_lua.chunk_lua_file(TEST_FILE_LUA, deferred_llm=True)
+        self.assertTrue(chunks)
+        for chunk in chunks:
+            print(chunk.to_json_item())
+            self.assertEqual(chunk.chunk_type, "lua") 
 
 
 if __name__ == "__main__":

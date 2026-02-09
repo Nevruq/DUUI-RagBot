@@ -28,6 +28,21 @@ class TestChunker(unittest.TestCase):
     def test_query_results(self):
         pass
 
+    def test_whole_pipeline(self):
+        """
+        Docstring for test_whole_pipeline. Given a example file. Chunking it -> Generate Description  (THREADING) -> Cast to JSON Item.
+        """
+        file_path = "src/data/duui-uima/duui-Hate"
+
+        from utils import filter_files
+        from import_data import load_data
+
+        files = filter_files(file_path)[:2]
+        print(len(files))
+        load_data(LIST_FILES=files, output_jsonl="src/data/DUUI_v1.jsonl")
+    
+
+        
 
 if __name__ == "__main__":
     unittest.main()

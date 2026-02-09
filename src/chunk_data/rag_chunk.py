@@ -56,7 +56,7 @@ class RAGChunk:
             input=embedding_string,
         ).embeddings[0]
     
-    def append_llm_data(self, llm_data: str) -> None:
+    def append_llm_description(self, llm_data: dict[str, object]) -> None:
         """
         Appends LLM data afterwards for better threading
         """
@@ -80,6 +80,7 @@ class RAGChunk:
         *,
         id_mode: str = "stable_hash",
         id_prefix: str = "id",
+        ollama_embedding: bool = True,
     ) -> Dict[str, object]:
         file_path = str(self.file)
         symbol_type = str(self.symbol_type)
@@ -116,7 +117,7 @@ class RAGChunk:
 
         return {
             "id": chunk_id,
-            "embedding": self.gen_embedding_meta(),
+            "embedding": self.gen_embedding_meta() if ollama_embedding else None,
             "document": self.text,
             "metadata": chroma_meta,
         }
@@ -125,19 +126,37 @@ class RAGChunk:
         *,
         id_mode: str = "stable_hash",
         id_prefix: str = "id",
+        ollama_embedding: bool = False,
     ) -> Dict[str, object]:
         """
         Converts the RAGChunk object to a JSON
         """
-        return self.to_chroma_item(id_mode=id_mode, id_prefix=id_prefix)
+        return self.to_chroma_item(id_mode=id_mode, id_prefix=id_prefix, ollama_embedding=ollama_embedding)
 
 
-def ragchunks_from_json_items(items: List[Dict[str, object]]) -> List[RAGChunk]:
+def ragchunks_to_jsonl(chunks: List[RAGChunk], path: str) -> None:
+    """
+    Docstring for ragchunks_to_jsonl. Gets List of RAGChunks and a path, writes the chunks to a jsonl file. 
+    
+    :param chunks: Description
+    :type chunks: List[RAGChunk]
+    :param path: Description
+    :type path: str
+    """
+    with open(path, "w", encoding="utf-8") as f:
+        for chunk in chunks:
+            json_item = chunk.to_json_item()
+            f.write(json.dumps(json_item) + "\n")
+
+
+def jsonl_to_RagChunks(path: str) -> List[RAGChunk]:
     """
     Convert a list of JSONL-loaded dicts into RAGChunk objects.
     """
+    with open(path, "r", encoding="utf-8") as f:
+        data = [json.loads(line) for line in f]
     chunks: List[RAGChunk] = []
-    for item in items:
+    for item in data:
         document = str(item.get("document", ""))
         metadata = item.get("metadata", {}) or {}
         keywords = metadata.get("keywords", "")
@@ -164,3 +183,31 @@ def ragchunks_from_json_items(items: List[Dict[str, object]]) -> List[RAGChunk]:
             )
         )
     return chunks
+
+
+def ragchunks_from_chroma_query(query_result: Dict[str, object]) -> List[RAGChunk]:
+    """
+    Convert a ChromaDB query result dict into a list of RAGChunk objects.
+    Expects the structure returned by collection.query(...).
+    """
+    documents = query_result.get("documents", [[]])
+    metadatas = query_result.get("metadatas", [[]])
+
+    if not documents or not isinstance(documents, list):
+        return []
+    if not metadatas or not isinstance(metadatas, list):
+        return []
+
+    docs_row = documents[0] if documents else []
+    metas_row = metadatas[0] if metadatas else []
+
+    items: List[Dict[str, object]] = []
+    for doc, meta in zip(docs_row, metas_row):
+        items.append(
+            {
+                "document": doc,
+                "metadata": meta or {},
+            }
+        )
+
+    return ragchunks_from_json_items(items)

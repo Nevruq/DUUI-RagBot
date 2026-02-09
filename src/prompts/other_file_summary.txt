@@ -16,26 +16,4 @@ Keyword rules:
 - Choose the most fitting labels for this file.
 
 Allowed labels:
-DUUI, DockerUnifiedUIMAInterface, DUUIComponent, DUUIDriver, PipelineDefinition, ComponentLifecycle,
-ExecutionContext, DependencyResolution, PipelineYAML, ComponentRegistration, PipelineValidation,
-PipelineOrchestration, PipelineExecutionOrder, TypeSystem, AnnotationType, FeatureStructure,
-TypeInheritance, TypeMapping, TypeMismatchError, NamespaceResolution, ComponentDescriptor,
-PythonComponent, JavaComponent, LuaComponent, ComponentAPI, ComponentConfiguration, RuntimeConfiguration,
-ResourceBinding, EnvironmentVariables, ModelResources, FileResources, DockerImage, Dockerfile,
-ContainerRuntime, GPUAcceleration, DistributedProcessing, ComponentNotFoundError, RuntimeError,
-InitializationError, ErrorPropagation, Logging, StackTraceAnalysis, ComponentTesting, PipelineTesting,
-UnitTests, IntegrationTests, MockComponents, ComponentREADME, ProjectStructure, ExamplePipelines,
-BuildArtifacts, CitationMetadata, HateSpeechDetection, OffensiveLanguageDetection, SentimentAnalysis,
-NamedEntityRecognition, TextClassification, NaturalLanguageInference, ReadabilityAssessment,
-RetrievalStrategy, ChunkingStrategy, Deduplication, ConditionalRetrieval, MetadataFiltering,
-HallucinationRisk, FactChecking, ToxicityDetection, EmotionClassification, GermanLanguage,
-SequenceLabeling, PartOfSpeechTagging, DependencyParsing, SyntacticParsing, SemanticRoleLabeling,
-NegationDetection, CoreferenceResolution, SentenceSegmentation, SentenceBoundaryDetection,
-ParagraphSegmentation, SpacyPipeline, StanzaPipeline, UDPipeline, CoreNLPPipeline,
-LanguageIdentification, TransformerModel, CohesionMetrics, TextComplexityEstimation,
-SurprisalEstimation, TopicModeling, BERTopic, Summarization, GazetteerLookup, EntityLinking,
-GeonamesLookup, TaxonNameDetection, BioNLP, TaxonomicNER, ReaderWriter, DataIO,
-TypeSystemConversion, FastTextModel, AITextDetection, LLM, EssayScoring, ResponseRating,
-SafetyDetection, OCRExtraction, DocumentProcessing, ImageToText, VisionLanguageModel,
-MultimodalPipeline, Multimodal, TextToImage, Vision, SpeechToText, ASR, ForcedAlignment,
-MediaDownload, AudioProcessing, CoreNLPProcessing
+{{labels}}

@@ -151,9 +151,12 @@ def chunk_python_code(
     Returns list of RAGChunk objects with explicit fields.
     """
     lines = _split_lines(code)
-    if repo_root is None:
-        repo_root = utils.find_repo_root(file_path)
-    effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
+    if repo_id:
+        effective_repo_id = repo_id
+    else:
+        if repo_root is None:
+            repo_root = utils.find_repo_root(file_path)
+        effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
 
     try:
         tree = ast.parse(code)

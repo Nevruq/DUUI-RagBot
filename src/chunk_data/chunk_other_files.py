@@ -114,7 +114,12 @@ def chunk_other_file(
     lines = text.splitlines()
     language = _infer_language(path)
     chunk_type = infer_chunk_type(path)
-    effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
+    if repo_id:
+        effective_repo_id = repo_id
+    else:
+        if repo_root is None:
+            repo_root = utils.find_repo_root(path)
+        effective_repo_id = make_repo_id(os.path.abspath(repo_root)) if repo_root else "repo::unknown"
     llm_data = None if deferred_llm else _gen_file_description(text)
     chunk = RAGChunk(
         text=text,

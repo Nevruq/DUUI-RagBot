@@ -83,9 +83,22 @@ class TestRAG(unittest.TestCase):
         print(query_results_filtert["metadatas"])
         self.assertTrue(True)
 
+    
+
+    def test_query_to_ragchunk(self):
+        from chunk_data.rag_chunk import ragchunks_from_chroma_query
+        from chunk_data.rag_chunk import RAGChunk
+        query_results_RAG_list = RAG.query_results(query_input="How do I implement a typesystem in python?", 
+                                              collection_name="lua_test", 
+                                              n_results=3,
+                                              ollama_embedding=False)
+        ragchunks = ragchunks_from_chroma_query(query_results_RAG_list)
+        self.assertEqual(len(ragchunks), 3)
+        self.assertIsInstance(ragchunks[0], RAGChunk)
+        print(ragchunks[0])
 
     def test_distinct_file_query(self):
-        
+        pass
 
 if __name__ == "__main__":
     unittest.main()

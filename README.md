@@ -13,7 +13,27 @@ Defniere
 
     - Scrape ganzes REPO -> Unterteile von File zu File, welche Kategorie, behalte aber verbindung
     - Query Routing ? -> Kategorien -> LLM_anfrage -> Ranking
+
+    IMPORTANT: Mit HugginfaceLink -> Scrappen -> mehrere LLM aufrufe -> mehrere Dokumente -> zip
     - 
+
+    Beispiel: Text Similarity; https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+
+    Folder: 
+      - Typesystem
+      - Lua Script: seria/Deseria
+      - 
+
+
+    Für den Anfänger ?:
+    - Java Umgebung, Java file
+    - Pom.xml
+    - TypeSystem
+    - 
+
+
+
+
 
 
 # Embedding

@@ -16,7 +16,7 @@ def _get_collection():
     pass
 
 
-def query_results(query_input: str, collection_name: str, n_results: int = 5, distinct_file: bool = True):
+def query_results(query_input: str, collection_name: str, n_results: int = 5, distinct_file: bool = False, ollama_embedding: bool = True):
     client = cdb.PersistentClient(RAG_PATH)
     collection = client.get_or_create_collection(name=collection_name)
     if collection.count() == 0:
@@ -24,8 +24,11 @@ def query_results(query_input: str, collection_name: str, n_results: int = 5, di
     if distinct_file: 
     # use proper embedding ollama
         return get_distinct_file(query_input, collection_name, n_results)
-    embedding_input = embed_ollama(query_input)
-    return collection.query(query_embeddings=embedding_input, n_results=n_results)
+    if ollama_embedding:
+        embedding_input = embed_ollama(query_input)
+        return collection.query(query_embeddings=embedding_input, n_results=n_results)
+    else:
+        return collection.query(query_texts=query_input, n_results=n_results)
 
 
 def get_distinct_file(query_input: str, collection_name: str, n_results: int = 5):

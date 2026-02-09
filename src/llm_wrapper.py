@@ -20,7 +20,7 @@ class LLMWrapper():
     def add_model(self, model:str):
         self.model = model
 
-    import json
+
     def llm_rewrite_query(self, input_str) -> dict:
         """
         In order for better query_results the prompt from the user needs to be rewritten by
@@ -96,71 +96,46 @@ class LLMWrapper():
         return response.output_text
 
 
-    
 
-    def llm_code_description(self, code: str)-> dict:
+    def llm_lua_code_builder(self, input_user: str, collection_name: str, rewrite_query: bool = True, rag_context: bool = True, ollama_embedding: bool = True) -> str:
         """
-        Generates the Output for the code descirption in the proper Json format
+        This function call instucts the Model in a certain way to assist with coding Question for DUUI and in particular python.
         """
-        class metadatasRag(BaseModel):
-            description: str
-            keywords: list[str]
-            
-        # Load Prompt 
-        prompt_code_description = utils.load_prompt_template("src/prompts/code_section_summary.txt")
-        labels = []
-        # TODO guck ob die formattierung hier nötig ist.
-        try:
-            with open("src/DUUIDictonary.txt", "r", encoding="utf-8") as f:
-                content = f.read()
-            start = content.find("[")
-            end = content.rfind("]")
-            if start != -1 and end != -1 and end > start:
-                labels = ast.literal_eval(content[start:end + 1])
-            if not isinstance(labels, list):
-                labels = []
-            labels = [str(label).strip() for label in labels if str(label).strip()]
-        except Exception:
-            labels = []
-        if labels:
-            prompt_code_description = prompt_code_description.replace("{{labels}}", ", ".join(labels))
-        else:
-            prompt_code_description = prompt_code_description.replace("{{labels}}", "")
+        prompt_lua_code_builder = utils.load_prompt_template("src/prompts/lua_code_builder.txt")
 
-        if self.llm_disabled:
-            return {"description": "N.A", "keywords": ["file:unknown", "code", "summary"]}
-        print("LLM aufruf.")
-        response = self.client.responses.parse(
+        # format query response
+        query_response = {}
+
+        # When rewrite_query is True the Prompt of the user is rewritten for better RAG
+        if rewrite_query:
+            input_user = self.llm_rewrite_query(input_str=input_user)["description"]
+
+        if rag_context:
+            # TODO eventuell schlauer in der query_reponse funktion zu formatieren
+            query_response = query_results(input_user, collection_name=collection_name, ollama_embedding=ollama_embedding)
+
+        documents = query_response.get("documents", [[]])[0] if query_response else []
+        metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
+        context_parts = []
+        for i, doc in enumerate(documents or []):
+            meta = metadatas[i] if i < len(metadatas) else {}
+            context_parts.append(f"[{i + 1}] document:\n{doc}\nmetadata:\n{meta}")
+        rag_context_text = "\n\n".join(context_parts) if context_parts else "No RAG context."
+
+        concat_prompt = (
+            prompt_lua_code_builder
+            .replace("{{user_input}}", input_user)
+            .replace("{{rag_context}}", rag_context_text)
+        )
+
+        response = self.client.responses.create(
             model=self.model,
-            instructions=prompt_code_description,
-            input=code,
-            text_format=metadatasRag
-        ).output_parsed
-        return {"description": response.description, "keywords": response.keywords}
-    
+            instructions="You are a DUUI Lua code builder.",
+            input=concat_prompt
+        )
 
-    def llm_other_file_description(self, text: str) -> str:
-        class otherFileMetadata(BaseModel):
-            description: str
-            keywords: list[str]
+        return response.output_text
 
-        if self.llm_disabled:
-            return {"description": "N.A", "keywords": ["file:unknown", "noncode", "summary"]}
-
-        prompt_other_file = utils.load_prompt_template("src/prompts/other_file_summary.txt")
-
-        response = self.client.responses.parse(
-            model=self.model,
-            instructions=prompt_other_file,
-            input=text,
-            text_format=otherFileMetadata
-        ).output_parsed
-        return {"description": response.description, "keywords": response.keywords}
-    
-
-
-        
-    
 
     def llm_typesystem_builder(
         self,
@@ -210,3 +185,64 @@ class LLMWrapper():
             raise "Reponse has invalid Formatting."
         return response
 
+
+    # ===========================================================================================================================0
+    # This part is for pre-Data annotations.
+
+    def llm_code_description(self, code: str)-> dict:
+        # TODO gucke inwiefern die diese Funkltion nötig ist oder ob die andere File code als auch andere Files gut abdeckt
+        """
+        Generates the Output for the code descirption in the proper Json format
+        """
+        class metadatasRag(BaseModel):
+            description: str
+            keywords: list[str]
+            
+        # Load Prompt 
+        prompt_code_description = utils.load_prompt_template("src/prompts/code_section_summary.txt")
+        labels = utils.load_prompt_template("src/data/DUUIDictonary.txt")
+
+        try:
+            prompt_code_description = prompt_code_description.replace("{{labels}}", labels)
+        except Exception:
+            print("Error replacing labels in prompt. Check if the placeholder {{labels}} exists in the prompt template.")
+            raise
+
+        if self.llm_disabled:
+            return {"description": "N.A", "keywords": ["file:unknown", "code", "summary"]}
+        print("LLM aufruf.")
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions=prompt_code_description,
+            input=code,
+            text_format=metadatasRag
+        ).output_parsed
+        return {"description": response.description, "keywords": response.keywords}
+    
+
+    def llm_other_file_description(self, text: str) -> str:
+        class otherFileMetadata(BaseModel):
+            description: str
+            keywords: list[str]
+
+        if self.llm_disabled:
+            return {"description": "N.A", "keywords": ["file:unknown", "noncode", "summary"]}
+
+        prompt_other_file = utils.load_prompt_template("src/prompts/other_file_summary.txt")
+
+        labels = utils.load_prompt_template("src/data/DUUIDictonary.txt")
+
+        try:
+            prompt_other_file = prompt_other_file.replace("{{labels}}", labels)
+        except Exception:
+            print("Error replacing labels in prompt. Check if the placeholder {{labels}} exists in the prompt template.")
+            raise
+
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions=prompt_other_file,
+            input=text,
+            text_format=otherFileMetadata
+        ).output_parsed
+        return {"description": response.description, "keywords": response.keywords}
+    

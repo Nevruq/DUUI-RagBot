@@ -6,13 +6,26 @@ if __name__ == "__main__":
     from tqdm import tqdm
     import chromadb as cdb
     import traceback
+    from utils import filter_files
+    from import_data import chunk_file
+    from chunk_data.rag_chunk import RAGChunk
 
-    PATH_DUUI = "src/data/duui-uima"
-    FILTER_FILES = {".py", ".ipynb"}
-    TEST_FILE = ["src/data/duui-uima/duui-Hate/src/main/python/duui_hate.py"]
+
+    files = filter_files("src/data/",  filters={".lua"})[:10]
+    all_chunks = []
+    for file in tqdm(files):
+        cur_chunks = chunk_file(file, deferred_llm=True)
+        all_chunks.extend(cur_chunks)
+    
 
     import utils
+
     client = cdb.PersistentClient(utils.get_rag_path())
-    collection = client.get_collection("java_v2")
-    emb = embed_ollama("create a pipeline for cas objects")
-    print(collection.query(query_embeddings=emb)["metadatas"])
+    collection = client.get_or_create_collection(name="lua_test")
+    formatted_chunks = []
+    for chunk in all_chunks:
+        collection.add(
+            ids=[chunk.to_chroma_item()["id"]],
+            documents=[chunk.to_chroma_item()["document"]],
+            metadatas=[chunk.to_chroma_item()["metadata"]],
+        )

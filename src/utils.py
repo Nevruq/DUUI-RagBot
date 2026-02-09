@@ -26,19 +26,60 @@ def embed_ollama(input: str):
 
 def filter_files(path: str, filters: set = None):
     """
-    Filterse a path and returns all file with that set filter. If no filter is given all files are returned.
+    Filtere einen Pfad rekursiv und gib alle Dateien zurück, die den Filter erfüllen.
+    - `path` kann eine Datei oder ein Verzeichnis sein (rekursiv durchsucht).
+    - `filters` kann `None` (alle Dateien), eine Menge/Iterable von Erweiterungen
+      wie `{'.py', '.java'}` oder auch eine fehlerhafte Eingabe wie `set('.py')`
+      enthalten. In letzteren Fällen wird versucht, die korrekte Erweiterung zu
+      rekonstruieren.
     """
-    LIST_XML_FILES = []
-    for root, subdirs, files in os.walk(path):
+    matched = []
+
+    # Normalize filters: accept None or any iterable of strings
+    proc_filters = None
+    if filters:
+        # If user passed a single string like '.py', allow that too
+        if isinstance(filters, str):
+            proc_filters = {filters}
+        else:
+            # coerce to set of strings
+            proc_filters = {str(f) for f in filters}
+
+        # Heuristic: if filters are single characters (e.g. set('.py'))
+        # reconstruct probable extension
+        if all(len(f) == 1 for f in proc_filters):
+            joined = "".join(sorted(proc_filters))
+            if not joined.startswith('.'):
+                joined = '.' + joined
+            proc_filters = {joined}
+
+        # ensure extensions start with a dot (treat values as suffixes)
+        proc_filters = {f if f.startswith('.') else '.' + f for f in proc_filters}
+
+    # If path is a file, check it directly
+    if os.path.isfile(path):
+        if not proc_filters:
+            return [os.path.abspath(path)]
+        else:
+            fname = os.path.basename(path).lower()
+            if fname.endswith(tuple(f.lower() for f in proc_filters)):
+                return [os.path.abspath(path)]
+            return []
+
+    # If path does not exist or is not a directory, return empty list
+    if not os.path.exists(path):
+        return []
+
+    for root, _subdirs, files in os.walk(path):
         for file in files:
             current_file = os.path.join(root, file)
-            # filter files and ignore pom.xml
-            if not filters:
-                LIST_XML_FILES.append(current_file)
+            if not proc_filters:
+                matched.append(current_file)
             else:
-                if file.endswith(tuple(filters)):
-                    LIST_XML_FILES.append(current_file)
-    return LIST_XML_FILES
+                if file.lower().endswith(tuple(f.lower() for f in proc_filters)):
+                    matched.append(current_file)
+
+    return matched
 
 
 def infer_file_type(path: str) -> str:
@@ -90,14 +131,6 @@ def calc_token_length(context: str) -> int:
     return len(context) / 4
 
 
-from lxml import etree
-
-ALLOWED_RANGES = {
-    "uima.cas.String", "uima.cas.Integer", "uima.cas.Float", "uima.cas.Boolean",
-    "uima.cas.Double", "uima.cas.Long", "uima.cas.Short", "uima.cas.Byte",
-    "uima.cas.FSArray", "uima.cas.IntegerArray", "uima.cas.FloatArray",
-    "uima.tcas.Annotation", "uima.cas.TOP"
-}
 
 from cassis import load_typesystem
 from lxml import etree
@@ -106,8 +139,18 @@ def validate_typesystem(xml_text: str) -> list[str]:
     issues = []
     # 2) UIMA/Cassis load
 
+    # Accept either raw XML text or a path to an XML file
+    text = xml_text
+    if os.path.exists(xml_text) and os.path.isfile(xml_text):
+        try:
+            with open(xml_text, 'r', encoding='utf-8') as fh:
+                text = fh.read()
+        except Exception as e:
+            issues.append(f"Failed to read typesystem file: {e}")
+            return issues
+
     try:
-        load_typesystem(xml_text.encode("utf-8"))
+        load_typesystem(text.encode("utf-8"))
     except Exception as e:
         issues.append(f"Cassis load error: {e}")
 
@@ -128,9 +171,10 @@ def validate_labels(labels: list[str]) -> list[str]:
     """
     Checks if all Labels in a List are valid and exisist in the DUUIRAG dictonary.
     """
-    valid_labels = load_prompt_template("src/DUUIDictonary.txt")
+    valid_labels = load_prompt_template("src/data/DUUIDictonary.txt")
     filtered_labels = []
     for label in labels:
         if label in valid_labels:
             filtered_labels.append(label)
     return filtered_labels
+

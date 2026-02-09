@@ -19,11 +19,12 @@ class TestUtils(unittest.TestCase):
 
 
     def test_filter_files(self):
-        test_path = "src/data/duui-uima/duui-Hate"
+        test_path = "src/data/DockerUnifiedUIMAInterface"
         filter_files = utils.filter_files(test_path)
         self.assertIsNotNone(filter_files)
         filter_files_py = utils.filter_files(test_path, set(".py"))
-        print(filter_files)
+
+        print(len(filter_files))
         print(filter_files_py)
 
     def test_xml_validater(self):
@@ -31,13 +32,6 @@ class TestUtils(unittest.TestCase):
         errors = utils.validate_typesystem(test_path)
         self.assertEqual(len(errors), 0)
 
-    def test_filter_files(self):
-        test_path = "src/data/duui-uima/duui-Hate"
-        filter_files = utils.filter_files(test_path)
-        self.assertIsNotNone(filter_files)
-        filter_files_py = utils.filter_files(test_path, set(".py"))
-        print(filter_files)
-        print(filter_files_py)
 
 if __name__ == "__main__":
     unittest.main()
