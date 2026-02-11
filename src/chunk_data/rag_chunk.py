@@ -210,4 +210,4 @@ def ragchunks_from_chroma_query(query_result: Dict[str, object]) -> List[RAGChun
             }
         )
 
-    return ragchunks_from_json_items(items)
+    #return ragchunks_from_json_items(items)

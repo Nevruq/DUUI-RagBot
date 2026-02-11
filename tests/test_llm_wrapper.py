@@ -153,7 +153,7 @@ class TestLLMWrapper(unittest.TestCase):
 
     def test_typesystem_builder(self):
         llm = llm_wrapper.LLMWrapper()
-        response = llm.llm_typesystem_builder("Baue ein TypeSytem für mein Rede. Sie hat eine redeid ein Text, und wird auf Sentiment untersucht.", "all_data_v1")
+        response = llm.llm_typesystem_builder("Baue ein TypeSytem für mein Rede. Sie hat eine redeid ein Text, und wird auf Sentiment untersucht.", "DUUI_v1")
         print(response)
 
     def test_code_description_labels(self):
@@ -172,6 +172,48 @@ class TestLLMWrapper(unittest.TestCase):
         llm = llm_wrapper.LLMWrapper()
         response = llm.llm_lua_code_builder("Generate a lua code for a new model for sentiment which gets a text and returns a sentiment score, positive neutral and negative which add all to 1", "lua_test", ollama_embedding=False)
         print(response)
+
+    def test_HF_model_info(self):
+        llm = llm_wrapper.LLMWrapper()
+
+        model_input = """{
+            "_name_or_path": "tweeteval_new/roberta-base-rt-sentiment/",
+            "architectures": [
+                "RobertaForSequenceClassification"
+            ],
+            "attention_probs_dropout_prob": 0.1,
+            "bos_token_id": 0,
+            "eos_token_id": 2,
+            "gradient_checkpointing": false,
+            "hidden_act": "gelu",
+            "hidden_dropout_prob": 0.1,
+            "hidden_size": 768,
+            "id2label": {
+                "0": "LABEL_0",
+                "1": "LABEL_1",
+                "2": "LABEL_2"
+            },
+            "initializer_range": 0.02,
+            "intermediate_size": 3072,
+            "label2id": {
+                "LABEL_0": 0,
+                "LABEL_1": 1,
+                "LABEL_2": 2
+            },
+            "layer_norm_eps": 1e-05,
+            "max_position_embeddings": 514,
+            "model_type": "roberta",
+            "num_attention_heads": 12,
+            "num_hidden_layers": 12,
+            "pad_token_id": 1,
+            "type_vocab_size": 1,
+            "vocab_size": 50265
+            }"
+        """
+
+        response = llm.llm_generate_hf_context(input_user=model_input)
+        print(response)
+
 
 if __name__ == "__main__":
     unittest.main()

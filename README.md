@@ -3,7 +3,10 @@
 Was ist der Use-Case?
 Definiere den Aufbau, wie man DUUI setup baut
   - Alle komponenten die dazu gehören
-Defniere 
+
+
+Dockerkomponenten:
+  -
 
 # TODO
     - scrape DUUI projekte, baue ignorecases ein damit unnögite config files nicht berücksichtigt werde 

@@ -69,8 +69,10 @@ def load_data(LIST_FILES: list[str], output_jsonl: str, repo_root: str | None = 
                 f.write(json.dumps(rchunk.to_json_item()) + "\n")
                 f.flush()
     
-def insert_data_chroma(chunks: list[rg.RAGChunk], collection_name: str):
-    items = [chunk.to_chroma_item() for chunk in chunks]
+def insert_data_chroma(chunks: list[rg.RAGChunk], collection_name: str, ollama_embedding: bool = False):
+
+    from utils import embed_ollama
+    items = [chunk.to_chroma_item(ollama_embedding=ollama_embedding) for chunk in chunks]
     ids = [item["id"] for item in items]
     embs = [item["embedding"] for item in items]
     docs = [item["document"] for item in items]
@@ -83,13 +85,21 @@ def insert_data_chroma(chunks: list[rg.RAGChunk], collection_name: str):
 
 
 if __name__ == "__main__":
-    
+    """
+    "
     #print(chromadb.PersistentClient("chroma").get_collection("all_data_v1").count())
     file_path = "src/data/DockerUnifiedUIMAInterface"
     files = filter_files(file_path, filters={".lua", ".py", ".java", ".md", ".xml"})
     print(f"Total files to process: {len(files)}")
     load_data(LIST_FILES=files, output_jsonl="src/data/DUUI_v1.jsonl", repo_root=file_path)
-
+    """
+    from utils import embed_ollama
+    from chunk_data.rag_chunk import jsonl_to_RagChunks
+    # Example of loading from jsonl and inserting to chroma
+    jsonl_path = "src/data/DUUI_v1.jsonl"
+    chunks = jsonl_to_RagChunks(jsonl_path)[:300]
+    print(f"Loaded {len(chunks)} chunks from JSONL.")
+    insert_data_chroma(chunks, collection_name="DUUI_v1", ollama_embedding=True)
 
     
 

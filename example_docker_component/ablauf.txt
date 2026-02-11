@@ -1,0 +1,4 @@
+Hier der Ablauf und alle Datein die generiert werden müssen.
+
+docker_build.sh:
+    -

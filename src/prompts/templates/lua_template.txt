@@ -1,0 +1,136 @@
+-- =========================
+-- FIXED IMPORTS (STATIC)
+-- =========================
+StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
+Class = luajava.bindClass("java.lang.Class")
+JCasUtil = luajava.bindClass("org.apache.uima.fit.util.JCasUtil")
+TopicUtils = luajava.bindClass("org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaUtils")
+
+-- BEGIN_DYNAMIC:ANNOTATION_BINDING
+-- luajava.bindClass("org.example.annotation.SomeAnnotation")
+-- END_DYNAMIC:ANNOTATION_BINDING
+
+-- =========================================================
+-- SERIALIZE: CAS  → JSON  (MODEL-INDEPENDENT)
+-- =========================================================
+function serialize(inputCas, outputStream, parameters)
+
+    local doc_lang = inputCas:getDocumentLanguage()
+    local doc_text = inputCas:getDocumentText()
+    local doc_len  = TopicUtils:getDocumentTextLength(inputCas)
+
+    local selection_types = parameters["selection"]
+
+    local selections = {}
+    local selections_count = 1
+
+    for selection_type in string.gmatch(selection_types, "([^,]+)") do
+        local sentences = {}
+
+        if selection_type == "text" then
+            sentences[1] = {
+                text  = doc_text,
+                begin = 0,
+                ["end"] = doc_len
+            }
+        else
+            local sentences_count = 1
+            local clazz = Class:forName(selection_type)
+            local it = JCasUtil:select(inputCas, clazz):iterator()
+
+            while it:hasNext() do
+                local s = it:next()
+                sentences[sentences_count] = {
+                    text  = s:getCoveredText(),
+                    begin = s:getBegin(),
+                    ["end"] = s:getEnd()
+                }
+                sentences_count = sentences_count + 1
+            end
+        end
+
+        selections[selections_count] = {
+            selection = selection_type,
+            sentences = sentences
+        }
+        selections_count = selections_count + 1
+    end
+
+    outputStream:write(json.encode({
+        selections = selections,
+        lang       = doc_lang,
+        doc_len    = doc_len
+    }))
+end
+
+-- =========================================================
+-- DESERIALIZE: JSON → CAS  (MODEL-DEPENDENT PARTS)
+-- =========================================================
+function deserialize(inputCas, inputStream)
+
+    local inputString =
+        luajava.newInstance(
+            "java.lang.String",
+            inputStream:readAllBytes(),
+            StandardCharsets.UTF_8
+        )
+
+    local results = json.decode(inputString)
+
+    -- ---------- FIXED METADATA HANDLING ----------
+    if results["modification_meta"] == nil or results["model"] == nil then
+        return
+    end
+
+    local modification_meta = results["modification_meta"]
+    local model_info        = results["model"]
+
+    local modification_anno =
+        luajava.newInstance(
+            "org.texttechnologylab.annotation.DocumentModification",
+            inputCas
+        )
+    modification_anno:setUser(modification_meta["user"])
+    modification_anno:setTimestamp(modification_meta["timestamp"])
+    modification_anno:setComment(modification_meta["comment"])
+    modification_anno:addToIndexes()
+
+    local model_meta =
+        luajava.newInstance(
+            "org.texttechnologylab.annotation.model.MetaData",
+            inputCas
+        )
+    model_meta:setModelName(model_info["name"])
+    model_meta:setModelVersion(model_info["version"])
+    model_meta:setSource(model_info["source"])
+    model_meta:setLang(model_info["lang"])
+    model_meta:addToIndexes()
+
+
+    -- =====================================================
+    -- BEGIN_DYNAMIC:RESULT_EXTRACTION
+    -- Read model outputs from JSON
+    -- Example:
+    --   local begins = results["begins"]
+    --   local ends   = results["ends"]
+    --   local outputs = results["outputs"]
+    -- =====================================================
+    -- END_DYNAMIC:RESULT_EXTRACTION
+
+
+    -- =====================================================
+    -- BEGIN_DYNAMIC:CAS_WRITING_LOOP
+    -- Create annotations per span / document
+    -- Example:
+    -- for i, out in ipairs(outputs) do
+    --   local anno = luajava.newInstance("org.example.Annotation", inputCas)
+    --   anno:setBegin(begins[i])
+    --   anno:setEnd(ends[i])
+    --   anno:setLabel(out["label"])
+    --   anno:setScore(out["score"])
+    --   anno:setModel(model_meta)
+    --   anno:addToIndexes()
+    -- end
+    -- =====================================================
+    -- END_DYNAMIC:CAS_WRITING_LOOP
+end
