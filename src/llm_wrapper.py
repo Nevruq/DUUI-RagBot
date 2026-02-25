@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import utils
 import json
 from RAG import query_results
+from typing import Optional, Dict, List, Literal
 
 MODEL_NAME_2 = "gpt-5-nano-2025-08-07"  
 
@@ -63,7 +64,7 @@ class LLMWrapper():
                 prompt_code_assistant = utils.load_prompt_template("src/prompts/gen_python_code.txt")
             case "java":
                 prompt_code_assistant = utils.load_prompt_template("src/prompts/gen_java_code.txt")
-            case "typescript":
+            case "typesytem":
                 prompt_code_assistant = utils.load_prompt_template("src/prompts/typesystem_builder.txt")
             case _:
                 prompt_code_assistant = utils.load_prompt_template("src/prompts/answer_from_context.txt")
@@ -216,6 +217,7 @@ class LLMWrapper():
         # Build final prompt
         concat_prompt = (
             prompt_lua_code_builder
+            .replace("{{blue_print}}", blue_print)
             .replace("{{user_input}}", input_user)
             .replace("{{few_shot_examples}}", few_shot_text)
             .replace("{{rag_context}}", rag_context_text)
@@ -278,6 +280,77 @@ class LLMWrapper():
         except:
             raise "Reponse has invalid Formatting."
         return response
+    
+    def llm_generate_hf_context(self, input_user: str) -> dict:
+        """
+        Generates a context dictionary for HuggingFace model information.
+        TODO maybe add more infomration from the model
+        """
+        prompt_hf_context = utils.load_prompt_template("src/prompts/hf_context_generator.txt")
+
+        class HFModelInformation(BaseModel):
+            # --- Identity ---
+            model_id: str                 
+            revision: Optional[str] = None    
+            # --- Task & Architecture ---
+            task: Literal[
+                "text-classification",
+                "token-classification",
+                "question-answering",
+                "text-generation",
+                "text2text-generation",
+                "unknown"
+            ]
+            architectures: List[str]           
+            model_class_hint: str         
+
+            input_type: Literal[
+                "text",
+                "text_pair",
+                "tokens",
+                "text_with_offsets"
+            ]
+            tokenizer_class: str      
+            model_max_length: Optional[int]
+            required_model_inputs: List[str]   # e.g. ["input_ids", "attention_mask"]
+            # --- Outputs (what comes out) ---
+            output_keys: List[str]             # e.g. ["logits"] or ["start_logits", "end_logits"]
+
+            num_labels: Optional[int] = None
+            id2label: Optional[Dict[int, str]] = None
+
+            output_semantics: Literal[
+                "single_label_classification",
+                "multi_label_classification",
+                "regression",
+                "span_extraction",
+                "generation"
+            ]
+            recommended_postprocess: Literal[
+                "softmax",
+                "sigmoid",
+                "none",
+                "argmax_span",
+                "generate"
+            ]
+            # --- Safety flags for generation / DUUI ---
+            labels_are_semantic: bool           # False if LABEL_0, LABEL_1, ...
+            manual_mapping_required: bool       # True → LLM must NOT guess labels
+
+            # --- DUUI relevance ---
+            produces_spans: bool                # begin/end needed?
+            produces_text: bool                 # generated text?
+
+
+        response = self.client.responses.parse(
+            model=self.model,
+            instructions="You are a DUUI HuggingFace context generator.",
+            input=prompt_hf_context.replace("{{user_input}}", input_user),
+            text_format=HFModelInformation
+        ).output_parsed 
+
+        return response.dict()
+
 
 
     # ===========================================================================================================================0

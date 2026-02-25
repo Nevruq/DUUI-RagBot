@@ -5,7 +5,7 @@ import utils
 
 MODEL_NAME_2 = "gpt-5-nano-2025-08-07" 
 PROMPT_TEMPLATE_PATH = "src/prompts/gen_python_code.txt"
-COLLECTION_NAME = "all_data_v1"
+COLLECTION_NAME = "DUUI_v1"
 
 
 def python_fix_code(prompt: str, stream: bool = False):

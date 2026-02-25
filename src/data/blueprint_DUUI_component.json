@@ -1,0 +1,128 @@
+{
+  "blueprint_version": "1.0",
+  "kind": "duui_component",
+  "project_layout": {
+    "root": ".",
+    "python_dir": "src/main/python",
+    "docker_dir": "src/main/docker"
+  },
+
+  "component": {
+    "name": "duui-hf-classifier",
+    "module_name": "duui_component",
+    "app_object": "app",
+    "port": 9714,
+    "package_namespace": "de.project.duui"
+  },
+
+  "hf_model_facts": {
+    "source": "autoconfig_inspection",
+    "model_id": "{{MODEL_ID}}",
+    "revision": "{{REVISION}}",
+    "task": "{{INFERRED_TASK}}",
+    "architectures": "{{ARCHITECTURES}}",
+    "num_labels": "{{NUM_LABELS}}",
+    "id2label": "{{ID2LABEL}}",
+    "problem_type": "{{PROBLEM_TYPE}}",
+    "recommended_postprocess": "{{POSTPROCESS}}",
+    "tokenizer": {
+      "class": "{{TOKENIZER_CLASS}}",
+      "model_max_length": "{{MODEL_MAX_LENGTH}}",
+      "pad_token": "{{PAD_TOKEN}}"
+    },
+    "probe": {
+      "output_keys": "{{OUTPUT_KEYS}}",
+      "logits_shape_example": "{{LOGITS_SHAPE}}"
+    }
+  },
+
+  "runtime_contract": {
+    "input": {
+      "document_text": true,
+      "language_optional": true
+    },
+    "output": {
+      "annotation_kind": "document_level",
+      "fields": [
+        { "name": "label", "type": "string" },
+        { "name": "score", "type": "float" },
+        { "name": "model", "type": "string" },
+        { "name": "revision", "type": "string" }
+      ]
+    }
+  },
+
+  "typesystem_contract": {
+    "typesystem_path": "src/main/python/TypeSystem.xml",
+    "types_to_define": [
+      {
+        "name": "de.project.duui.SentimentOrClassLabel",
+        "supertype": "uima.tcas.Annotation",
+        "features": [
+          { "name": "label", "range": "uima.cas.String" },
+          { "name": "score", "range": "uima.cas.Float" },
+          { "name": "model", "range": "uima.cas.String" },
+          { "name": "revision", "range": "uima.cas.String" }
+        ]
+      }
+    ],
+    "compatibility_rules": [
+      "only_add_types_or_features",
+      "no_renames",
+      "no_range_changes",
+      "no_deletions"
+    ]
+  },
+
+  "docker_contract": {
+    "dockerfile_path": "src/main/docker/Dockerfile",
+    "copy_files": [
+      "src/main/python/TypeSystem.xml",
+      "src/main/python/duui_component.py",
+      "src/main/python/hf_model.py"
+    ],
+    "env_vars": [
+      { "name": "MODEL_NAME", "required": true },
+      { "name": "MODEL_VERSION", "required": false },
+      { "name": "MODEL_CACHE_SIZE", "required": false, "default": "1" },
+      { "name": "LOG_LEVEL", "required": false, "default": "INFO" },
+      { "name": "TRANSFORMERS_OFFLINE", "required": false, "default": "0" }
+    ],
+    "entrypoint": ["uvicorn", "duui_component:app", "--host", "0.0.0.0", "--port", "9714"],
+    "cmd": ["--workers", "1"]
+  },
+
+  "files": {
+    "must_create": [
+      { "path": "src/main/python/duui_component.py", "type": "python" },
+      { "path": "src/main/python/hf_model.py", "type": "python" },
+      { "path": "src/main/python/communication.lua", "type": "lua" },
+      { "path": "src/main/python/TypeSystem.xml", "type": "xml" },
+      { "path": "src/main/docker/Dockerfile", "type": "dockerfile" },
+      { "path": "src/main/docker/build.sh", "type": "shell" }
+    ],
+    "optional_create": [
+      { "path": "README.md", "type": "markdown" }
+    ]
+  },
+
+  "validation": {
+    "must_pass": [
+      "python -m py_compile src/main/python/duui_component.py src/main/python/hf_model.py",
+      "docker build -t {{IMAGE_TAG}} -f src/main/docker/Dockerfile .",
+      "container_starts_and_listens_on_port_9714"
+    ],
+    "smoke_test": {
+      "request_example": {
+        "text": "Hello world!",
+        "expected": "returns label+score"
+      }
+    }
+  },
+
+  "output_format": {
+    "manifest_required": true,
+    "file_blocks_required": true,
+    "file_block_header": "--- FILE: <path>"
+  }
+}

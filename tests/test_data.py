@@ -41,6 +41,13 @@ class TestChunker(unittest.TestCase):
         print(len(files))
         load_data(LIST_FILES=files, output_jsonl="src/data/DUUI_v1.jsonl")
     
+    def test_jsonl_to_chroma(self):
+        import chunk_data.rag_chunk as cj
+        jsonl_path = "src/data/DUUI_v1.jsonl"
+        chunks = cj.jsonl_to_RagChunks(jsonl_path)
+        self.assertTrue(chunks)
+        print(chunks[0].to_chroma_item())
+        
 
         
 

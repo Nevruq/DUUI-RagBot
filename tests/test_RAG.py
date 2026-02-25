@@ -100,6 +100,14 @@ class TestRAG(unittest.TestCase):
 
     def test_distinct_file_query(self):
         pass
+    def test_chroma_content(self):
+        path = "DUUI_v1"
+        client = chromadb.PersistentClient(RAG.RAG_PATH)
+        collection = client.get_or_create_collection(name=path)
+        self.assertIsNotNone(collection)
+        if collection.count() == 0:
+            raise Exception("Collection is Empty.")
+        print(collection.count())
 
 if __name__ == "__main__":
     unittest.main()
