@@ -8,7 +8,7 @@ from chunk_data.chunk_lua import chunk_lua_file
 
 import chromadb
 import tqdm
-from utils import filter_files, get_rag_path, load_jsonl_ragChunk
+from utils import filter_files, RAG_PATH, load_jsonl_ragChunk
 import json
 import time
 import random
@@ -75,7 +75,7 @@ def insert_data_chroma(chunks: list[rg.RAGChunk], collection_name: str):
     embs = [item["embedding"] for item in items]
     docs = [item["document"] for item in items]
     metas = [item["metadata"] for item in items]
-    client = chromadb.PersistentClient(get_rag_path())
+    client = chromadb.PersistentClient(RAG_PATH)
     collection = client.get_or_create_collection(name=collection_name)
     collection.add(ids=ids, embeddings=embs, documents=docs, metadatas=metas)
 
@@ -83,13 +83,15 @@ def insert_data_chroma(chunks: list[rg.RAGChunk], collection_name: str):
 
 
 if __name__ == "__main__":
-    
-    #print(chromadb.PersistentClient("chroma").get_collection("all_data_v1").count())
-    file_path = "src/data/DockerUnifiedUIMAInterface"
-    files = filter_files(file_path, filters={".lua", ".py", ".java", ".md", ".xml"})
-    print(f"Total files to process: {len(files)}")
-    load_data(LIST_FILES=files, output_jsonl="src/data/DUUI_v1.jsonl", repo_root=file_path)
-
+    from chunk_data.rag_chunk import jsonl_to_RagChunks
+    client = chromadb.PersistentClient("chroma").get_collection("all_data_v2").count()
+    print(client)
+    #file_path = "src/data/DockerUnifiedUIMAInterface"
+    #files = filter_files(file_path, filters={".lua", ".py", ".java", ".md", ".xml"})
+    #print(f"Total files to process: {len(files)}")
+    #load_data(LIST_FILES=files, output_jsonl="src/data/DUUI_v1.jsonl", repo_root=file_path)
+    list_ragChunks = jsonl_to_RagChunks("src/data/DUUI_v1.jsonl")
+    #insert_data_chroma(list_ragChunks, "all_data_v2")
 
     
 

@@ -45,7 +45,15 @@ class LLMWrapper():
 
 
     
-    def llm_code_assistant(self, input_user: str, collection_name: str, coding_lg: str = "", rewrite_query: bool = True, rag_context: bool = True)-> str:
+    def llm_code_assistant(
+        self,
+        input_user: str,
+        collection_name: str,
+        coding_lg: str = "",
+        rewrite_query: bool = True,
+        rag_context: bool = True,
+        stream: bool = False,
+    ):
         """
         This function call instucts the Model in a certain way to assist with coding Question for DUUI and in particular python.
         """
@@ -87,6 +95,23 @@ class LLMWrapper():
         )
 
         print(utils.calc_token_length(concat_prompt))
+        if stream:
+            stream_resp = self.client.responses.create(
+                model=self.model,
+                instructions="You are a DUUI assitant and answer question about.",
+                input=concat_prompt,
+                stream=True,
+            )
+
+            def _iter_text_deltas():
+                for event in stream_resp:
+                    if event.type == "response.output_text.delta":
+                        yield event.delta
+                    elif event.type == "response.refusal.delta":
+                        yield event.delta
+
+            return _iter_text_deltas()
+
         response = self.client.responses.create(
             model=self.model,
             instructions="You are a DUUI assitant and answer question about.",
@@ -97,40 +122,108 @@ class LLMWrapper():
 
 
 
-    def llm_lua_code_builder(self, input_user: str, collection_name: str, rewrite_query: bool = True, rag_context: bool = True, ollama_embedding: bool = True) -> str:
+    def llm_lua_code_builder(
+        self,
+        input_user: str,
+        collection_name: str,
+        rewrite_query: bool = True,
+        rag_context: bool = True,
+        few_shot_examples: bool = True,
+        n_examples: int = 2,
+        ollama_embedding: bool = True
+    ) -> str:
         """
-        This function call instucts the Model in a certain way to assist with coding Question for DUUI and in particular python.
+        Generates Lua code for DUUI communication scripts using few-shot learning with RAG examples.
+
+        Args:
+            input_user: The user's request/description of what Lua script to generate
+            collection_name: ChromaDB collection name to query
+            rewrite_query: Whether to rewrite the query for better RAG retrieval
+            rag_context: Whether to include additional RAG context snippets
+            few_shot_examples: Whether to include complete example scripts (default: True)
+            n_examples: Number of few-shot examples to include (default: 2)
+            ollama_embedding: Whether to use Ollama embeddings
+
+        Returns:
+            Generated Lua code as string
         """
+        from RAG import get_few_shot_examples
+
         prompt_lua_code_builder = utils.load_prompt_template("src/prompts/lua_code_builder.txt")
 
-        # format query response
-        query_response = {}
+        # Original query for few-shot examples (before rewriting)
+        original_query = input_user
 
         # When rewrite_query is True the Prompt of the user is rewritten for better RAG
         if rewrite_query:
-            input_user = self.llm_rewrite_query(input_str=input_user)["description"]
+            rewritten = self.llm_rewrite_query(input_str=input_user)
+            input_user = rewritten["description"]
 
+        # === Few-Shot Examples ===
+        few_shot_text = "No examples available."
+        if few_shot_examples:
+            # Get complete Lua file examples that are similar to the user's request
+            examples = get_few_shot_examples(
+                query_input=original_query,
+                collection_name=collection_name,
+                chunk_type="lua",
+                n_examples=n_examples,
+                diversity=True  # Ensure examples are from different files
+            )
+
+            if examples:
+                example_parts = []
+                for i, example in enumerate(examples, 1):
+                    meta = example.get("metadata", {})
+                    file_name = meta.get("file", "unknown.lua").split("/")[-1]
+                    description = meta.get("description", "")
+
+                    example_parts.append(
+                        f"--- EXAMPLE {i}: {file_name} ---\n"
+                        f"Description: {description}\n\n"
+                        f"{example['code']}\n"
+                        f"--- END EXAMPLE {i} ---"
+                    )
+                few_shot_text = "\n\n".join(example_parts)
+
+        # === RAG Context (additional relevant snippets) ===
+        rag_context_text = "No additional context."
         if rag_context:
-            # TODO eventuell schlauer in der query_reponse funktion zu formatieren
-            query_response = query_results(input_user, collection_name=collection_name, ollama_embedding=ollama_embedding)
+            query_response = query_results(
+                input_user,
+                collection_name=collection_name,
+                ollama_embedding=ollama_embedding,
+                n_results=5
+            )
 
-        documents = query_response.get("documents", [[]])[0] if query_response else []
-        metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
-        context_parts = []
-        for i, doc in enumerate(documents or []):
-            meta = metadatas[i] if i < len(metadatas) else {}
-            context_parts.append(f"[{i + 1}] document:\n{doc}\nmetadata:\n{meta}")
-        rag_context_text = "\n\n".join(context_parts) if context_parts else "No RAG context."
+            documents = query_response.get("documents", [[]])[0] if query_response else []
+            metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
 
+            # Include relevant code snippets
+            context_parts = []
+            for i, doc in enumerate(documents or []):
+                meta = metadatas[i] if i < len(metadatas) else {}
+                context_parts.append(
+                    f"[Snippet {i + 1}]\n"
+                    f"From: {meta.get('file', 'unknown')}\n"
+                    f"Description: {meta.get('description', '')}\n\n"
+                    f"{doc}"
+                )
+
+            if context_parts:
+                rag_context_text = "\n\n".join(context_parts[:3])  # Limit to top 3 snippets
+
+        # Build final prompt
         concat_prompt = (
             prompt_lua_code_builder
             .replace("{{user_input}}", input_user)
+            .replace("{{few_shot_examples}}", few_shot_text)
             .replace("{{rag_context}}", rag_context_text)
         )
 
         response = self.client.responses.create(
             model=self.model,
-            instructions="You are a DUUI Lua code builder.",
+            instructions="You are a DUUI Lua code builder. Generate clean, production-ready Lua code following the patterns in the examples.",
             input=concat_prompt
         )
 
@@ -146,6 +239,7 @@ class LLMWrapper():
     ) -> str:
         """
         Builds a UIMA TypeSystem based on user requirements and RAG context.
+        Additionally 
         """
         if self.llm_disabled:
             return "typesystem_xml:\n```xml\n<!-- LLM disabled -->\n```\nassumptions: none\nvalidation:\n- LLM disabled\nsuggestions:\n- Enable LLM to generate a TypeSystem."

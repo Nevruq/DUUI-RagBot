@@ -36,15 +36,33 @@ def main() -> None:
         output_text.insert(tk.END, text)
         output_text.configure(state=tk.DISABLED)
 
+    def append_output(text: str) -> None:
+        output_text.configure(state=tk.NORMAL)
+        output_text.insert(tk.END, text)
+        output_text.see(tk.END)
+        output_text.configure(state=tk.DISABLED)
+
     def enable_button() -> None:
         submit_button.configure(state=tk.NORMAL)
 
     def worker(prompt: str) -> None:
         try:
-            response = python_fix_code(prompt)
+            response = python_fix_code(prompt, stream=True)
         except Exception as exc:
             response = f"Fehler: {exc}"
-        root.after(0, lambda: (set_output(response), enable_button()))
+            root.after(0, lambda: (set_output(response), enable_button()))
+            return
+
+        if isinstance(response, str):
+            root.after(0, lambda: (set_output(response), enable_button()))
+            return
+
+        root.after(0, lambda: set_output(""))
+        for delta in response:
+            if not delta:
+                continue
+            root.after(0, lambda d=delta: append_output(d))
+        root.after(0, enable_button)
 
     def on_submit() -> None:
         prompt = input_text.get("1.0", tk.END).strip()

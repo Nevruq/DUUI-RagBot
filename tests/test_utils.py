@@ -32,6 +32,20 @@ class TestUtils(unittest.TestCase):
         errors = utils.validate_typesystem(test_path)
         self.assertEqual(len(errors), 0)
 
+    def test_validate_labels(self):
+        """
+        Testing wheve the choosen labels from the llm acutally correspond to the labels choosen from the list.
+        """
+        from utils import load_prompt_template
+        import re
+
+        test_return = {"keywords": ["DUUI", "Python"]}
+
+        labels = load_prompt_template("src/data/DUUIDictonary.txt")
+        ""
+        
+        
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     import utils
 
-    client = cdb.PersistentClient(utils.get_rag_path())
+    client = cdb.PersistentClient(utils.RAG_PATH)
     collection = client.get_or_create_collection(name="lua_test")
     formatted_chunks = []
     for chunk in all_chunks:

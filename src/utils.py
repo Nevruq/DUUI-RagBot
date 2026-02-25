@@ -118,6 +118,11 @@ def get_rag_path(default: str = "chroma") -> str:
     return os.getenv("RAG_PATH", default)
 
 
+# Global RAG_PATH constant - loaded once at module import
+load_dotenv()
+RAG_PATH = os.getenv("RAG_PATH", "chroma")
+
+
 def load_jsonl_ragChunk(path: str) -> list[rc.RAGChunk]:
     with open(path) as f:
         data = [json.loads(line) for line in f]

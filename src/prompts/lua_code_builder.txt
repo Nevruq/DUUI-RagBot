@@ -1,118 +1,47 @@
 SYSTEM:
-You are a code generator for Lua scripts used in DUUI. Follow the required template exactly. Output valid JSON only.
+You are a code generator for Lua scripts used in DUUI. Study the provided examples carefully, then generate a new script that follows the same patterns and conventions.
 
 USER:
-TASK: Generate a Lua script for a new model.
-MODEL_NAME: ${MODEL_NAME}
-MODEL_ANNOTATION_CLASS: ${ANNOTATION_CLASS}
-MODEL_FIELDS: ${MODEL_FIELDS}
-LANG: ${LANG}
+TASK: {{user_input}}
 
-INPUT:
-${INPUT_SPEC}
+=== REFERENCE EXAMPLES ===
+Below are complete, working Lua scripts from the DUUI ecosystem. Study their structure, patterns, and conventions:
 
-OUTPUT_SCHEMA (JSON):
-{
-  "lua_code": "<FULL_LUA_SCRIPT>",
-  "notes": "<short, optional>"
-}
+{{few_shot_examples}}
 
-RULES:
-- The Lua script MUST follow the exact template and formatting style shown below.
-- The script MUST include exactly two functions: serialize(...) and deserialize(...).
-- The script MUST bind required Java classes at the top (StandardCharsets, Class, JCasUtil, DUUILuaUtils).
-- The script MUST adapt to the given MODEL_ANNOTATION_CLASS and MODEL_FIELDS.
-- The script MUST read/write JSON using json.encode/json.decode.
-- The deserialize function MUST create annotations of type MODEL_ANNOTATION_CLASS and map fields correctly.
-- Output JSON only. No markdown. No extra text.
+=== END EXAMPLES ===
 
-TEMPLATE (MUST FOLLOW):
-StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
-Class = luajava.bindClass("java.lang.Class")
-JCasUtil = luajava.bindClass("org.apache.uima.fit.util.JCasUtil")
-TopicUtils = luajava.bindClass("org.texttechnologylab.DockerUnifiedUIMAInterface.lua.DUUILuaUtils")
+=== RELEVANT CODE CONTEXT ===
+Additional relevant code snippets that may help:
 
-function serialize(inputCas, outputStream, parameters)
-    local doc_lang = inputCas:getDocumentLanguage()
-    local doc_text = inputCas:getDocumentText()
-    local doc_len = TopicUtils:getDocumentTextLength(inputCas)
-    local selection_types = parameters["selection"]
+{{rag_context}}
 
-    local selections = {}
-    local selections_count = 1
-    for selection_type in string.gmatch(selection_types, "([^,]+)") do
-        local sentences = {}
-        if selection_type == "text" then
-            local s = { text = doc_text, begin = 0, ['end'] = doc_len }
-            sentences[1] = s
-        else
-            local sentences_count = 1
-            local clazz = Class:forName(selection_type);
-            local sentences_it = JCasUtil:select(inputCas, clazz):iterator()
-            while sentences_it:hasNext() do
-                local sentence = sentences_it:next()
-                local s = {
-                    text = sentence:getCoveredText(),
-                    begin = sentence:getBegin(),
-                    ['end'] = sentence:getEnd()
-                }
-                sentences[sentences_count] = s
-                sentences_count = sentences_count + 1
-            end
-        end
+=== END CONTEXT ===
 
-        local selection = { sentences = sentences, selection = selection_type }
-        selections[selections_count] = selection
-        selections_count = selections_count + 1
-    end
+GENERATION RULES:
+1. The Lua script MUST include exactly two functions: serialize(...) and deserialize(...)
+2. MUST bind required Java classes at the top (StandardCharsets, Class, JCasUtil, DUUILuaUtils or similar)
+3. serialize() function MUST:
+   - Extract document text, language, and length from inputCas
+   - Handle selection_types parameter for text segmentation
+   - Use json.encode() to write output to outputStream
+4. deserialize() function MUST:
+   - Read and decode JSON from inputStream
+   - Create DocumentModification and MetaData annotations
+   - Create domain-specific annotations with proper begin/end positions
+   - Map result fields to annotation setters
+   - Call addToIndexes() on all annotations
+5. Follow the exact coding style, naming conventions, and patterns from the examples
+6. Use proper Lua syntax and luajava bindings
+7. Handle edge cases (nil checks, default values) as shown in examples
 
-    outputStream:write(json.encode({
-        selections = selections,
-        lang = doc_lang,
-        doc_len = doc_len
-    }))
-end
+OUTPUT FORMAT:
+Generate a complete, working Lua script that can be directly used in DUUI. Do NOT wrap in markdown code blocks.
 
-function deserialize(inputCas, inputStream)
-    local inputString = luajava.newInstance("java.lang.String", inputStream:readAllBytes(), StandardCharsets.UTF_8)
-    local results = json.decode(inputString)
-
-    if results["modification_meta"] ~= nil and results["meta"] ~= nil and results["begins"] ~= nil then
-        local source = results["model_source"]
-        local model_version = results["model_version"]
-        local model_name = results["model_name"]
-        local model_lang = results["model_lang"]
-
-        local modification_meta = results["modification_meta"]
-        local modification_anno = luajava.newInstance("org.texttechnologylab.annotation.DocumentModification", inputCas)
-        modification_anno:setUser(modification_meta["user"])
-        modification_anno:setTimestamp(modification_meta["timestamp"])
-        modification_anno:setComment(modification_meta["comment"])
-        modification_anno:addToIndexes()
-
-        local model_meta = luajava.newInstance("org.texttechnologylab.annotation.model.MetaData", inputCas)
-        model_meta:setModelVersion(model_version)
-        model_meta:setModelName(model_name)
-        model_meta:setSource(source)
-        model_meta:setLang(model_lang)
-        model_meta:addToIndexes()
-
-        local begins = results["begins"]
-        local ends = results["ends"]
-
-        -- MODEL_FIELDS are mapped below. Replace/extend as needed.
-        -- Example: local labels = results["labels"]
-
-        for index_i, _ in ipairs(begins) do
-            local anno = luajava.newInstance("${ANNOTATION_CLASS}", inputCas)
-            anno:setBegin(begins[index_i])
-            anno:setEnd(ends[index_i])
-
-            -- Field mapping here, e.g.:
-            -- anno:setLabel(labels[index_i])
-
-            anno:setModel(model_meta)
-            anno:addToIndexes()
-        end
-    end
-end
+KEY PATTERNS TO FOLLOW FROM EXAMPLES:
+- Java class bindings at the top
+- serialize() extracts data from CAS and writes JSON
+- deserialize() reads JSON and creates annotations in CAS
+- All annotations must call addToIndexes()
+- Use proper error handling and nil checks where appropriate
+- Follow the exact parameter handling patterns from examples

@@ -170,7 +170,7 @@ class TestLLMWrapper(unittest.TestCase):
         from chunk_data.chunk_lua import chunk_lua_file
         
         llm = llm_wrapper.LLMWrapper()
-        response = llm.llm_lua_code_builder("Generate a lua code for a new model for sentiment which gets a text and returns a sentiment score, positive neutral and negative which add all to 1", "lua_test", ollama_embedding=False)
+        response = llm.llm_lua_code_builder("Generate a lua code for a new model for sentiment which gets a text and returns a sentiment score, positive neutral and negative which add all to 1", "all_data_v2", ollama_embedding=False)
         print(response)
 
 if __name__ == "__main__":
