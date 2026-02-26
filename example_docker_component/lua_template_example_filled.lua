@@ -1,5 +1,13 @@
--- Minimal DUUI Lua Communication Script for Hate Detection
--- Uses CAS API exclusively (no JCas classes required)
+-- DUUI Lua Communication Script
+-- ============================================
+-- Generated from Hugging Face Model JSON:
+--   model_id: debajyotimaz/codemix_hate
+--   model_type: bert
+--   architectures: BertForSequenceClassification
+--   inferred_task: text-classification
+--   num_labels: 2
+--   id2label: {"0": "Non-hateful", "1": "Hateful"}
+-- ============================================
 
 StandardCharsets = luajava.bindClass("java.nio.charset.StandardCharsets")
 
@@ -8,7 +16,6 @@ function serialize(inputCas, outputStream, parameters)
     local doc_len = string.len(doc_text)
     local doc_lang = inputCas:getDocumentLanguage()
 
-    -- Get selection parameter (default: "text" = whole document)
     local selection_type = parameters["selection"]
     if selection_type == nil then
         selection_type = "text"
@@ -17,7 +24,6 @@ function serialize(inputCas, outputStream, parameters)
     local sentences = {}
 
     if selection_type == "text" then
-        -- Process whole document
         local s = {
             text = doc_text,
             begin = 0,
@@ -25,20 +31,13 @@ function serialize(inputCas, outputStream, parameters)
         }
         sentences[1] = s
     else
-        -- Process by annotation type using CAS API (no JCas required)
         local cas = inputCas:getCas()
         local typeSystem = cas:getTypeSystem()
         local annotationType = typeSystem:getType(selection_type)
 
         if annotationType == nil then
-            print("ERROR: Type '" .. selection_type .. "' not found in TypeSystem!")
-            -- Return empty selection instead of failing
-            local selection = {
-                sentences = {},
-                selection = selection_type
-            }
             outputStream:write(json.encode({
-                selections = {selection},
+                selections = {{sentences = {}, selection = selection_type}},
                 lang = doc_lang,
                 doc_len = doc_len
             }))
@@ -51,23 +50,17 @@ function serialize(inputCas, outputStream, parameters)
 
         while iterator:hasNext() do
             local annotation = iterator:next()
-            local s = {
+            sentences[count] = {
                 text = annotation:getCoveredText(),
                 begin = annotation:getBegin(),
                 ['end'] = annotation:getEnd()
             }
-            sentences[count] = s
             count = count + 1
         end
     end
 
-    local selection = {
-        sentences = sentences,
-        selection = selection_type
-    }
-
     outputStream:write(json.encode({
-        selections = {selection},
+        selections = {{sentences = sentences, selection = selection_type}},
         lang = doc_lang,
         doc_len = doc_len
     }))
@@ -81,30 +74,37 @@ function deserialize(inputCas, inputStream)
         return
     end
 
-    -- Work with CAS (not JCas!)
     local cas = inputCas:getCas()
     local typeSystem = cas:getTypeSystem()
 
-    -- Get HateSpeech type
-    local hateType = typeSystem:getType("org.example.HateSpeech")
-    if hateType == nil then
-        print("ERROR: Type 'org.example.HateSpeech' not found in TypeSystem!")
+    -- TYPE_NAME: Derived from model_id "codemix_hate" -> HateSpeech
+    local annotationType = typeSystem:getType("org.texttechnologylab.annotation.HateSpeech")
+    if annotationType == nil then
+        print("ERROR: Type 'org.texttechnologylab.annotation.HateSpeech' not found in TypeSystem!")
         return
     end
 
-    local labelFeature = hateType:getFeatureByBaseName("label")
-    local scoreFeature = hateType:getFeatureByBaseName("score")
+    -- FEATURE_DECLARATIONS: For text-classification with id2label
+    -- Labels will be: "Non-hateful" or "Hateful"
+    local labelFeature = annotationType:getFeatureByBaseName("label")
+    local scoreFeature = annotationType:getFeatureByBaseName("score")
 
+    -- Extract result arrays
     local begins = results["begins"]
     local ends = results["ends"]
+
+    -- OUTPUT_EXTRACTIONS: Standard for text-classification
     local labels = results["labels"]
     local scores = results["scores"]
 
+    -- Create annotations
     for i = 1, #begins do
-        -- Create annotation using CAS
-        local annotation = cas:createAnnotation(hateType, begins[i], ends[i])
+        local annotation = cas:createAnnotation(annotationType, begins[i], ends[i])
+
+        -- FEATURE_SETTERS: label=String, score=Double
         annotation:setStringValue(labelFeature, labels[i])
         annotation:setDoubleValue(scoreFeature, scores[i])
+
         cas:addFsToIndexes(annotation)
     end
 end

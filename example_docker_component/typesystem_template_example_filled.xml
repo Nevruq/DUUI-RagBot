@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DUUI TypeSystem -->
+<!-- ============================================
+     Generated from Hugging Face Model JSON:
+       model_id: debajyotimaz/codemix_hate
+       model_type: bert
+       architectures: BertForSequenceClassification
+       inferred_task: text-classification
+       num_labels: 2
+       id2label: {"0": "Non-hateful", "1": "Hateful"}
+============================================ -->
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <!-- TYPESYSTEM_NAME: Derived from model_id "codemix_hate" -> HateDetection -->
+    <name>HateDetectionTypeSystem</name>
+
+    <!-- TYPESYSTEM_DESCRIPTION: Based on model purpose -->
+    <description>TypeSystem for hate speech detection using debajyotimaz/codemix_hate</description>
+    <version>1.0</version>
+
+    <types>
+        <typeDescription>
+            <!-- TYPE_NAME: Derived from task "hate" -> HateSpeech -->
+            <name>org.texttechnologylab.annotation.HateSpeech</name>
+
+            <!-- TYPE_DESCRIPTION: Classification result description -->
+            <description>Hate speech classification result</description>
+
+            <!-- SUPERTYPE_NAME: Standard annotation base -->
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+
+            <features>
+                <!-- FEATURES: For text-classification with id2label -->
+                <!-- Labels from id2label: "Non-hateful", "Hateful" -->
+                <featureDescription>
+                    <name>label</name>
+                    <description>Classification label (Non-hateful, Hateful)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>score</name>
+                    <description>Confidence score (0.0 to 1.0)</description>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+    </types>
+</typeSystemDescription>

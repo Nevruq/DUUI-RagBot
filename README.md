@@ -5,9 +5,19 @@ Definiere den Aufbau, wie man DUUI setup baut
   - Alle komponenten die dazu gehören
 
 
-Dockerkomponenten:
-  -
+# Ablauf mit Hugginfacemodell
+1. Generiere Blueprint mit den wichtigsten Informationen aus dem Huggingfacemodell
+2. Erstelle damit TypeSystem
 
+
+
+
+
+
+
+# HuggenfaceModell zu testen
+- helinivan/english-sarcasm-detector
+- 
 # TODO
     - scrape DUUI projekte, baue ignorecases ein damit unnögite config files nicht berücksichtigt werde 
     - Implementiere optimizierte Embedding Methode 

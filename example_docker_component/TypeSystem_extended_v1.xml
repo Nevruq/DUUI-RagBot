@@ -1,23 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
     <name>HateDetectionTypeSystem</name>
-    <description>Minimal TypeSystem for Hate Speech Detection</description>
-    <version>1.0</version>
+    <description>Extended TypeSystem with category feature</description>
+    <version>1.1</version>
     <types>
-        <!-- Hate Speech Annotation -->
         <typeDescription>
             <name>org.example.HateSpeech</name>
             <description>Hate speech classification result</description>
             <supertypeName>uima.tcas.Annotation</supertypeName>
             <features>
+                <!-- Original Features -->
                 <featureDescription>
                     <name>label</name>
-                    <description>Classification label (e.g., HATE, NON_HATE)</description>
+                    <description>Classification label (HATE, NON_HATE)</description>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
                     <name>score</name>
                     <description>Confidence score</description>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+
+                <!-- NEU: Kategorie hinzufügen -->
+                <featureDescription>
+                    <name>category</name>
+                    <description>Type of hate speech (racism, sexism, etc.)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+
+                <!-- NEU: Mehrere Sub-Scores -->
+                <featureDescription>
+                    <name>toxicityScore</name>
+                    <description>Toxicity level score</description>
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
             </features>

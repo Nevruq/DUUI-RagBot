@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DUUI TypeSystem Template -->
+<!-- ============================================ -->
+<!-- LLM INSTRUCTIONS:
+     Generate a complete TypeSystem XML by replacing all {PLACEHOLDERS}
+     using the provided Hugging Face model JSON.
+
+     INPUT JSON FIELDS TO USE:
+     - model_id           -> For TypeSystem name/description
+     - inferred_task      -> Determines base structure
+     - num_labels         -> Number of classification labels
+     - id2label           -> Label mapping {"0": "Label1", "1": "Label2", ...}
+
+     PLACEHOLDER RULES:
+     - {TYPESYSTEM_NAME}        -> Derive from model purpose (e.g., "SentimentTypeSystem")
+     - {TYPESYSTEM_DESCRIPTION} -> Brief description of what the TypeSystem handles
+     - {TYPE_NAME}              -> Fully qualified type (e.g., "org.texttechnologylab.annotation.Sentiment")
+     - {TYPE_DESCRIPTION}       -> Description of the annotation type
+     - {SUPERTYPE_NAME}         -> Usually "uima.tcas.Annotation"
+     - {FEATURES}               -> Feature descriptions based on task type
+============================================ -->
+
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <!-- ========================================
+         PLACEHOLDER: {TYPESYSTEM_NAME}
+
+         GENERATION RULE:
+         Derive from model_id or inferred_task:
+           - hate detection  -> "HateDetectionTypeSystem"
+           - sentiment       -> "SentimentTypeSystem"
+           - sarcasm         -> "SarcasmDetectionTypeSystem"
+           - emotion         -> "EmotionTypeSystem"
+         ======================================== -->
+    <name>{TYPESYSTEM_NAME}</name>
+
+    <!-- ========================================
+         PLACEHOLDER: {TYPESYSTEM_DESCRIPTION}
+
+         GENERATION RULE:
+         Brief description based on model purpose:
+           "TypeSystem for [task] using [model_id]"
+         ======================================== -->
+    <description>{TYPESYSTEM_DESCRIPTION}</description>
+    <version>1.0</version>
+
+    <types>
+        <typeDescription>
+            <!-- ========================================
+                 PLACEHOLDER: {TYPE_NAME}
+
+                 GENERATION RULE:
+                 Create fully qualified Java-style type name:
+                   - Namespace: org.texttechnologylab.annotation
+                   - TypeName: Derived from task (HateSpeech, Sentiment, etc.)
+
+                 Examples:
+                   - hate detection  -> "org.texttechnologylab.annotation.HateSpeech"
+                   - sentiment       -> "org.texttechnologylab.annotation.Sentiment"
+                   - sarcasm         -> "org.texttechnologylab.annotation.Sarcasm"
+                 ======================================== -->
+            <name>{TYPE_NAME}</name>
+
+            <!-- ========================================
+                 PLACEHOLDER: {TYPE_DESCRIPTION}
+
+                 GENERATION RULE:
+                 Describe annotation purpose:
+                   "[Task] classification result from [model_id]"
+                 ======================================== -->
+            <description>{TYPE_DESCRIPTION}</description>
+
+            <!-- ========================================
+                 PLACEHOLDER: {SUPERTYPE_NAME}
+
+                 GENERATION RULE:
+                 For text-classification: "uima.tcas.Annotation"
+                 For token-classification: "uima.tcas.Annotation"
+                 ======================================== -->
+            <supertypeName>{SUPERTYPE_NAME}</supertypeName>
+
+            <features>
+                <!-- ========================================
+                     PLACEHOLDER: {FEATURES}
+
+                     GENERATION RULE:
+                     Based on inferred_task and model output:
+
+                     For text-classification:
+                       - label (String): The classification label from id2label
+                       - score (Double): Confidence score (0.0 to 1.0)
+
+                     For token-classification (NER):
+                       - label (String): Entity type label
+                       - score (Double): Confidence score
+
+                     FEATURE TEMPLATE:
+                     <featureDescription>
+                         <name>featureName</name>
+                         <description>Feature description</description>
+                         <rangeTypeName>uima.cas.String|Double|Integer|Boolean</rangeTypeName>
+                     </featureDescription>
+
+                     RANGE TYPE MAPPING:
+                       - Text labels      -> uima.cas.String
+                       - Confidence       -> uima.cas.Double
+                       - Count/Index      -> uima.cas.Integer
+                       - Flag/Boolean     -> uima.cas.Boolean
+                     ======================================== -->
+                {FEATURES}
+            </features>
+        </typeDescription>
+    </types>
+</typeSystemDescription>

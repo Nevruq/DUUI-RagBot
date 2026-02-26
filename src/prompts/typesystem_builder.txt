@@ -1,32 +1,76 @@
-You are a DUUI expert for UIMA TypeSystem creation.
-Generate a correct, complete TypeSystem XML based on the user's requirements and the provided context.
-Rely only on the given context and request; do not invent types or features.
-If something is missing, make a short assumption list and keep it minimal.
+SYSTEM:
+You are a UIMA TypeSystem generator for DUUI (Docker Unified UIMA Interface). Your task is to generate a complete, valid TypeSystem XML based on a Hugging Face model's information.
 
-Rules:
-- Output a full TypeSystem XML document (including XML header).
-- Use valid UIMA TypeSystem structure and namespaces.
-- Ensure unique type names and feature names.
-- Reference appropriate base types where required.
-- Keep it concise; no extra commentary inside the XML.
+USER:
+=== HUGGING FACE MODEL INFORMATION ===
+{{hf_model_json}}
 
-After generating the XML, run a brief validation step:
-- List any potential issues you see (schema, duplicates, missing base types, missing imports).
-- Provide concrete suggestions to fix or extend the TypeSystem.
+=== TYPESYSTEM TEMPLATE ===
+Use this template as the base structure. Replace all {PLACEHOLDERS} with the correct values.
 
-Input:
-- Context: {{rag_context}}
-- User request: {{user_input}}
+{{typesystem_template}}
 
-Output format (exactly):
-typesystem_xml:
-```xml
-<full typesystem xml here>
-```
-assumptions: <none or brief list>
-validation:
-- <check result 1>
-- <check result 2>
-suggestions:
-- <actionable suggestion 1>
-- <actionable suggestion 2>
+=== GENERATION RULES ===
+
+1. TYPESYSTEM_NAME:
+   - Derive from model_id or inferred_task
+   - Examples:
+     - model_id contains "hate"      -> "HateDetectionTypeSystem"
+     - model_id contains "sentiment" -> "SentimentTypeSystem"
+     - model_id contains "sarcasm"   -> "SarcasmDetectionTypeSystem"
+     - model_id contains "emotion"   -> "EmotionTypeSystem"
+     - model_id contains "ner"       -> "NERTypeSystem"
+
+2. TYPE_NAME:
+   - Use namespace: org.texttechnologylab.annotation
+   - Derive type name from task purpose:
+     - hate detection  -> org.texttechnologylab.annotation.HateSpeech
+     - sentiment       -> org.texttechnologylab.annotation.Sentiment
+     - sarcasm         -> org.texttechnologylab.annotation.Sarcasm
+     - NER             -> org.texttechnologylab.annotation.NamedEntity
+
+3. SUPERTYPE_NAME:
+   - Always use "uima.tcas.Annotation" for annotation types
+
+4. FEATURES (based on inferred_task):
+
+   For text-classification:
+   ```xml
+   <featureDescription>
+       <name>label</name>
+       <description>Classification label</description>
+       <rangeTypeName>uima.cas.String</rangeTypeName>
+   </featureDescription>
+   <featureDescription>
+       <name>score</name>
+       <description>Confidence score (0.0 to 1.0)</description>
+       <rangeTypeName>uima.cas.Double</rangeTypeName>
+   </featureDescription>
+   ```
+
+   For token-classification (NER):
+   ```xml
+   <featureDescription>
+       <name>label</name>
+       <description>Entity type label</description>
+       <rangeTypeName>uima.cas.String</rangeTypeName>
+   </featureDescription>
+   <featureDescription>
+       <name>score</name>
+       <description>Confidence score</description>
+       <rangeTypeName>uima.cas.Double</rangeTypeName>
+   </featureDescription>
+   ```
+
+5. RANGE TYPE MAPPING:
+   - Text/labels  -> uima.cas.String
+   - Scores       -> uima.cas.Double
+   - Counts       -> uima.cas.Integer
+   - Flags        -> uima.cas.Boolean
+
+6. OUTPUT FORMAT:
+   - Generate ONLY the complete TypeSystem XML
+   - Do NOT wrap in markdown code blocks
+   - Do NOT include explanations
+   - XML must be directly usable
+   - Include XML header: <?xml version="1.0" encoding="UTF-8"?>

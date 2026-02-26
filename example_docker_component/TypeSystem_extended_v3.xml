@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>AdvancedHateDetectionTypeSystem</name>
+    <description>TypeSystem with complex features (arrays, references)</description>
+    <version>3.0</version>
+    <types>
+
+        <!-- Entity Type: Repräsentiert erwähnte Personen/Gruppen -->
+        <typeDescription>
+            <name>org.example.Entity</name>
+            <description>Named entity mention</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>entityType</name>
+                    <description>Type of entity (PERSON, ORGANIZATION, LOCATION)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>entityText</name>
+                    <description>Text of the entity</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <!-- Advanced HateSpeech mit komplexen Features -->
+        <typeDescription>
+            <name>org.example.AdvancedHateSpeech</name>
+            <description>Hate speech with detailed metadata</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <!-- Einfache Features -->
+                <featureDescription>
+                    <name>label</name>
+                    <description>Classification label</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>overallScore</name>
+                    <description>Overall confidence score</description>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+
+                <!-- ARRAY Feature: Mehrere Kategorien möglich -->
+                <featureDescription>
+                    <name>categories</name>
+                    <description>Multiple hate speech categories (racism, sexism, etc.)</description>
+                    <rangeTypeName>uima.cas.StringArray</rangeTypeName>  <!-- Array von Strings! -->
+                </featureDescription>
+
+                <!-- ARRAY Feature: Scores für jede Kategorie -->
+                <featureDescription>
+                    <name>categoryScores</name>
+                    <description>Confidence scores for each category</description>
+                    <rangeTypeName>uima.cas.DoubleArray</rangeTypeName>  <!-- Array von Doubles! -->
+                </featureDescription>
+
+                <!-- REFERENCE Feature: Verweis auf eine andere Annotation -->
+                <featureDescription>
+                    <name>targetEntity</name>
+                    <description>Entity that is targeted by hate speech (if any)</description>
+                    <rangeTypeName>org.example.Entity</rangeTypeName>  <!-- Verweis auf Entity Type! -->
+                </featureDescription>
+
+                <!-- FSArray: Array von Annotation-Referenzen -->
+                <featureDescription>
+                    <name>relatedEntities</name>
+                    <description>All entities mentioned in the hate speech</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>  <!-- Array von Feature Structures -->
+                    <elementType>org.example.Entity</elementType>      <!-- Typ der Array-Elemente -->
+                </featureDescription>
+
+                <!-- Boolean Feature -->
+                <featureDescription>
+                    <name>isExplicit</name>
+                    <description>Is the hate speech explicit or implicit?</description>
+                    <rangeTypeName>uima.cas.Boolean</rangeTypeName>
+                </featureDescription>
+
+                <!-- Integer Feature -->
+                <featureDescription>
+                    <name>reportCount</name>
+                    <description>Number of times this content was reported</description>
+                    <rangeTypeName>uima.cas.Integer</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+    </types>
+</typeSystemDescription>

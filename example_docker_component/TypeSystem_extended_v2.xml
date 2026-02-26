@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <name>ToxicContentTypeSystem</name>
+    <description>TypeSystem with inheritance hierarchy</description>
+    <version>2.0</version>
+    <types>
+
+        <!-- BASE TYPE: Gemeinsame Eigenschaften für alle toxischen Inhalte -->
+        <typeDescription>
+            <name>org.example.ToxicContent</name>
+            <description>Base type for all toxic content annotations</description>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <!-- Gemeinsame Features für ALLE Subtypen -->
+                <featureDescription>
+                    <name>score</name>
+                    <description>Confidence score</description>
+                    <rangeTypeName>uima.cas.Double</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>severity</name>
+                    <description>Severity level (LOW, MEDIUM, HIGH)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>detectedBy</name>
+                    <description>Model that detected this content</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <!-- SUBTYPE 1: HateSpeech erbt von ToxicContent -->
+        <typeDescription>
+            <name>org.example.HateSpeech</name>
+            <description>Hate speech annotation</description>
+            <supertypeName>org.example.ToxicContent</supertypeName>  <!-- Erbt alle Features von ToxicContent! -->
+            <features>
+                <!-- Zusätzliche Features NUR für HateSpeech -->
+                <featureDescription>
+                    <name>targetGroup</name>
+                    <description>Target group of hate speech (ethnicity, religion, gender, etc.)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <!-- SUBTYPE 2: Profanity erbt auch von ToxicContent -->
+        <typeDescription>
+            <name>org.example.Profanity</name>
+            <description>Profanity/offensive language annotation</description>
+            <supertypeName>org.example.ToxicContent</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>profanityType</name>
+                    <description>Type of profanity (curse, insult, slur)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+        <!-- SUBTYPE 3: Spam -->
+        <typeDescription>
+            <name>org.example.Spam</name>
+            <description>Spam content annotation</description>
+            <supertypeName>org.example.ToxicContent</supertypeName>
+            <features>
+                <featureDescription>
+                    <name>spamCategory</name>
+                    <description>Category (commercial, phishing, malware)</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+
+    </types>
+</typeSystemDescription>

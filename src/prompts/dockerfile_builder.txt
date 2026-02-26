@@ -1,0 +1,59 @@
+SYSTEM:
+You are a Dockerfile generator for DUUI (Docker Unified UIMA Interface). Your task is to generate a complete, working Dockerfile based on a Hugging Face model's information.
+
+USER:
+=== HUGGING FACE MODEL INFORMATION ===
+{{hf_model_json}}
+
+=== DOCKERFILE TEMPLATE ===
+Use this template as the base structure. Replace all {PLACEHOLDERS} with the correct values.
+
+{{dockerfile_template}}
+
+=== COMPONENT NAME (CRITICAL) ===
+This component name MUST be used consistently across ALL generated files:
+{{component_name}}
+
+File naming convention:
+- Python file:   duui_{{component_name}}.py
+- Lua file:      duui_{{component_name}}.lua
+- Docker image:  duui-{{component_name}}
+
+=== GENERATION RULES ===
+
+1. COMPONENT_NAME:
+   - Use the provided component_name for ALL file references
+   - This ensures consistency with other generated files (Lua, Python, TypeSystem)
+
+2. MODEL_DOWNLOAD_COMMAND (based on inferred_task):
+
+   For text-classification:
+   ```dockerfile
+   RUN python -c "from transformers import AutoModelForSequenceClassification, AutoTokenizer; \
+       AutoModelForSequenceClassification.from_pretrained('{model_id}'); \
+       AutoTokenizer.from_pretrained('{model_id}')"
+   ```
+
+   For token-classification:
+   ```dockerfile
+   RUN python -c "from transformers import AutoModelForTokenClassification, AutoTokenizer; \
+       AutoModelForTokenClassification.from_pretrained('{model_id}'); \
+       AutoTokenizer.from_pretrained('{model_id}')"
+   ```
+
+   For text-generation:
+   ```dockerfile
+   RUN python -c "from transformers import AutoModelForCausalLM, AutoTokenizer; \
+       AutoModelForCausalLM.from_pretrained('{model_id}'); \
+       AutoTokenizer.from_pretrained('{model_id}')"
+   ```
+
+3. PORT:
+   - Default: 9714
+   - Must be consistent with docker_build.sh
+
+4. OUTPUT FORMAT:
+   - Generate ONLY the complete Dockerfile
+   - Do NOT wrap in markdown code blocks
+   - Do NOT include explanations
+   - Dockerfile must be directly usable

@@ -125,107 +125,52 @@ class LLMWrapper():
 
     def llm_lua_code_builder(
         self,
-        input_user: str,
-        collection_name: str,
-        rewrite_query: bool = True,
-        rag_context: bool = True,
-        few_shot_examples: bool = True,
-        n_examples: int = 2,
-        ollama_embedding: bool = True
+        hf_model_json: dict,
+        typesystem_xml: str,
+        lua_template_path: str = "example_docker_component/lua_template.lua"
     ) -> str:
         """
-        Generates Lua code for DUUI communication scripts using few-shot learning with RAG examples.
+        Generates Lua code for DUUI communication scripts based on Hugging Face model information.
+        Uses CAS API exclusively (no JCas classes).
 
         Args:
-            input_user: The user's request/description of what Lua script to generate
-            collection_name: ChromaDB collection name to query
-            rewrite_query: Whether to rewrite the query for better RAG retrieval
-            rag_context: Whether to include additional RAG context snippets
-            few_shot_examples: Whether to include complete example scripts (default: True)
-            n_examples: Number of few-shot examples to include (default: 2)
-            ollama_embedding: Whether to use Ollama embeddings
+            hf_model_json: Dictionary containing Hugging Face model information
+                Required fields:
+                - model_id: str (e.g., "debajyotimaz/codemix_hate")
+                - inferred_task: str (e.g., "text-classification")
+                - id2label: dict (e.g., {"0": "Non-hateful", "1": "Hateful"})
+                - num_labels: int
+                - model_type: str (e.g., "bert")
+                - architectures: list[str]
+            typesystem_xml: The TypeSystem XML string that defines the annotation type and features
+            lua_template_path: Path to the Lua template file
 
         Returns:
-            Generated Lua code as string
+            Generated Lua code as string (uses CAS API, not JCas)
         """
-        from RAG import get_few_shot_examples
+        if self.llm_disabled:
+            return "-- LLM disabled, cannot generate Lua script"
 
+        # Load prompt template
         prompt_lua_code_builder = utils.load_prompt_template("src/prompts/lua_code_builder.txt")
 
-        # Original query for few-shot examples (before rewriting)
-        original_query = input_user
+        # Load Lua template
+        lua_template = utils.load_prompt_template(lua_template_path)
 
-        # When rewrite_query is True the Prompt of the user is rewritten for better RAG
-        if rewrite_query:
-            rewritten = self.llm_rewrite_query(input_str=input_user)
-            input_user = rewritten["description"]
-
-        # === Few-Shot Examples ===
-        few_shot_text = "No examples available."
-        if few_shot_examples:
-            # Get complete Lua file examples that are similar to the user's request
-            examples = get_few_shot_examples(
-                query_input=original_query,
-                collection_name=collection_name,
-                chunk_type="lua",
-                n_examples=n_examples,
-                diversity=True  # Ensure examples are from different files
-            )
-
-            if examples:
-                example_parts = []
-                for i, example in enumerate(examples, 1):
-                    meta = example.get("metadata", {})
-                    file_name = meta.get("file", "unknown.lua").split("/")[-1]
-                    description = meta.get("description", "")
-
-                    example_parts.append(
-                        f"--- EXAMPLE {i}: {file_name} ---\n"
-                        f"Description: {description}\n\n"
-                        f"{example['code']}\n"
-                        f"--- END EXAMPLE {i} ---"
-                    )
-                few_shot_text = "\n\n".join(example_parts)
-
-        # === RAG Context (additional relevant snippets) ===
-        rag_context_text = "No additional context."
-        if rag_context:
-            query_response = query_results(
-                input_user,
-                collection_name=collection_name,
-                ollama_embedding=ollama_embedding,
-                n_results=5
-            )
-
-            documents = query_response.get("documents", [[]])[0] if query_response else []
-            metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
-
-            # Include relevant code snippets
-            context_parts = []
-            for i, doc in enumerate(documents or []):
-                meta = metadatas[i] if i < len(metadatas) else {}
-                context_parts.append(
-                    f"[Snippet {i + 1}]\n"
-                    f"From: {meta.get('file', 'unknown')}\n"
-                    f"Description: {meta.get('description', '')}\n\n"
-                    f"{doc}"
-                )
-
-            if context_parts:
-                rag_context_text = "\n\n".join(context_parts[:3])  # Limit to top 3 snippets
+        # Format HF model JSON for the prompt
+        hf_model_json_str = json.dumps(hf_model_json, indent=2, ensure_ascii=False)
 
         # Build final prompt
         concat_prompt = (
             prompt_lua_code_builder
-            .replace("{{blue_print}}", blue_print)
-            .replace("{{user_input}}", input_user)
-            .replace("{{few_shot_examples}}", few_shot_text)
-            .replace("{{rag_context}}", rag_context_text)
+            .replace("{{hf_model_json}}", hf_model_json_str)
+            .replace("{{lua_template}}", lua_template)
+            .replace("{{typesystem_info}}", typesystem_xml)
         )
 
         response = self.client.responses.create(
             model=self.model,
-            instructions="You are a DUUI Lua code builder. Generate clean, production-ready Lua code following the patterns in the examples.",
+            instructions="You are a DUUI Lua code generator. Generate a complete Lua script using CAS API (not JCas). Output ONLY the Lua code, no explanations.",
             input=concat_prompt
         )
 
@@ -234,53 +179,208 @@ class LLMWrapper():
 
     def llm_typesystem_builder(
         self,
-        input_user: str,
-        collection_name: str,
-        rewrite_query: bool = True,
-        rag_context: bool = True
+        hf_model_json: dict,
+        typesystem_template_path: str = "example_docker_component/typesystem_template.xml"
     ) -> str:
         """
-        Builds a UIMA TypeSystem based on user requirements and RAG context.
-        Additionally 
+        Generates a UIMA TypeSystem XML based on Hugging Face model information.
+
+        Args:
+            hf_model_json: Dictionary containing Hugging Face model information
+                Required fields:
+                - model_id: str (e.g., "debajyotimaz/codemix_hate")
+                - inferred_task: str (e.g., "text-classification")
+                - id2label: dict (e.g., {"0": "Non-hateful", "1": "Hateful"})
+                - num_labels: int
+                - model_type: str (e.g., "bert")
+                - architectures: list[str]
+            typesystem_template_path: Path to the TypeSystem template file
+
+        Returns:
+            Generated TypeSystem XML as string
         """
         if self.llm_disabled:
-            return "typesystem_xml:\n```xml\n<!-- LLM disabled -->\n```\nassumptions: none\nvalidation:\n- LLM disabled\nsuggestions:\n- Enable LLM to generate a TypeSystem."
+            return "<!-- LLM disabled, cannot generate TypeSystem -->"
 
+        # Load prompt template
         prompt_typesystem = utils.load_prompt_template("src/prompts/typesystem_builder.txt")
 
-        if rewrite_query:
-            input_user = self.llm_rewrite_query(input_str=input_user)["description"]
+        # Load TypeSystem template
+        typesystem_template = utils.load_prompt_template(typesystem_template_path)
 
-        query_response = {}
-        if rag_context:
-            query_response = query_results(input_user, collection_name=collection_name)
+        # Format HF model JSON for the prompt
+        hf_model_json_str = json.dumps(hf_model_json, indent=2, ensure_ascii=False)
 
-        documents = query_response.get("documents", [[]])[0] if query_response else []
-        metadatas = query_response.get("metadatas", [[]])[0] if query_response else []
-        context_parts = []
-        for i, doc in enumerate(documents or []):
-            meta = metadatas[i] if i < len(metadatas) else {}
-            context_parts.append(f"[{i + 1}] document:\n{doc}\nmetadata:\n{meta}")
-        rag_context_text = "\n\n".join(context_parts) if context_parts else "No RAG context."
-
+        # Build final prompt
         concat_prompt = (
             prompt_typesystem
-            .replace("{{user_input}}", input_user)
-            .replace("{{rag_context}}", rag_context_text)
+            .replace("{{hf_model_json}}", hf_model_json_str)
+            .replace("{{typesystem_template}}", typesystem_template)
         )
 
         response = self.client.responses.create(
             model=self.model,
-            instructions="You are a DUUI TypeSystem builder. Only return the Typesytem.",
+            instructions="You are a DUUI TypeSystem generator. Generate a complete TypeSystem XML. Output ONLY the XML, no explanations.",
             input=concat_prompt
-        ).output_text
+        )
 
-        try:
-            utils.validate_typesystem(response)
-        except:
-            raise "Reponse has invalid Formatting."
-        return response
-    
+        return response.output_text
+
+
+    def llm_dockerfile_builder(
+        self,
+        hf_model_json: dict,
+        component_name: str,
+        dockerfile_template_path: str = "example_docker_component/dockerfile_template.dockerfile"
+    ) -> str:
+        """
+        Generates a Dockerfile based on Hugging Face model information.
+
+        Args:
+            hf_model_json: Dictionary containing Hugging Face model information
+                Required fields:
+                - model_id: str (e.g., "debajyotimaz/codemix_hate")
+                - inferred_task: str (e.g., "text-classification")
+                - architectures: list[str]
+            component_name: Unified component name for consistent file naming
+                (e.g., "hate" -> duui_hate.py, duui_hate.lua, duui-hate image)
+            dockerfile_template_path: Path to the Dockerfile template
+
+        Returns:
+            Generated Dockerfile as string
+        """
+        if self.llm_disabled:
+            return "# LLM disabled, cannot generate Dockerfile"
+
+        # Load prompt template
+        prompt_dockerfile = utils.load_prompt_template("src/prompts/dockerfile_builder.txt")
+
+        # Load Dockerfile template
+        dockerfile_template = utils.load_prompt_template(dockerfile_template_path)
+
+        # Format HF model JSON for the prompt
+        hf_model_json_str = json.dumps(hf_model_json, indent=2, ensure_ascii=False)
+
+        # Build final prompt
+        concat_prompt = (
+            prompt_dockerfile
+            .replace("{{hf_model_json}}", hf_model_json_str)
+            .replace("{{dockerfile_template}}", dockerfile_template)
+            .replace("{{component_name}}", component_name)
+        )
+
+        response = self.client.responses.create(
+            model=self.model,
+            instructions="You are a DUUI Dockerfile generator. Generate a complete Dockerfile. Output ONLY the Dockerfile, no explanations.",
+            input=concat_prompt
+        )
+
+        response.output_text
+
+
+    def llm_docker_build_builder(
+        self,
+        hf_model_json: dict,
+        component_name: str,
+        docker_build_template_path: str = "example_docker_component/docker_build_template.sh"
+    ) -> str:
+        """
+        Generates a docker_build.sh script based on Hugging Face model information.
+
+        Args:
+            hf_model_json: Dictionary containing Hugging Face model information
+                Required fields:
+                - model_id: str (e.g., "debajyotimaz/codemix_hate")
+                - revision: str (optional, for version)
+            component_name: Unified component name for consistent file naming
+                (e.g., "hate" -> duui-hate image name)
+            docker_build_template_path: Path to the docker_build.sh template
+
+        Returns:
+            Generated docker_build.sh script as string
+        """
+        if self.llm_disabled:
+            return "#!/bin/bash\n# LLM disabled, cannot generate docker_build.sh"
+
+        # Load prompt template
+        prompt_docker_build = utils.load_prompt_template("src/prompts/docker_build_builder.txt")
+
+        # Load docker_build template
+        docker_build_template = utils.load_prompt_template(docker_build_template_path)
+
+        # Format HF model JSON for the prompt
+        hf_model_json_str = json.dumps(hf_model_json, indent=2, ensure_ascii=False)
+
+        # Build final prompt
+        concat_prompt = (
+            prompt_docker_build
+            .replace("{{hf_model_json}}", hf_model_json_str)
+            .replace("{{docker_build_template}}", docker_build_template)
+            .replace("{{component_name}}", component_name)
+        )
+
+        response = self.client.responses.create(
+            model=self.model,
+            instructions="You are a DUUI docker build script generator. Generate a complete shell script. Output ONLY the script, no explanations.",
+            input=concat_prompt
+        )
+
+        return response.output_text
+
+
+    def llm_python_code_builder(
+        self,
+        hf_model_json: dict,
+        component_name: str,
+        python_template_path: str = "example_docker_component/python_template.py"
+    ) -> str:
+        """
+        Generates a Python DUUI component based on Hugging Face model information.
+
+        Args:
+            hf_model_json: Dictionary containing Hugging Face model information
+                Required fields:
+                - model_id: str (e.g., "debajyotimaz/codemix_hate")
+                - inferred_task: str (e.g., "text-classification")
+                - id2label: dict (e.g., {"0": "Non-hateful", "1": "Hateful"})
+                - num_labels: int
+                - architectures: list[str]
+            component_name: Unified component name for consistent file naming
+                (e.g., "hate" -> duui_hate.py, duui_hate.lua)
+            python_template_path: Path to the Python template file
+
+        Returns:
+            Generated Python code as string
+        """
+        if self.llm_disabled:
+            return "# LLM disabled, cannot generate Python script"
+
+        # Load prompt template
+        prompt_python = utils.load_prompt_template("src/prompts/python_code_builder.txt")
+
+        # Load Python template
+        python_template = utils.load_prompt_template(python_template_path)
+
+        # Format HF model JSON for the prompt
+        hf_model_json_str = json.dumps(hf_model_json, indent=2, ensure_ascii=False)
+
+        # Build final prompt
+        concat_prompt = (
+            prompt_python
+            .replace("{{hf_model_json}}", hf_model_json_str)
+            .replace("{{python_template}}", python_template)
+            .replace("{{component_name}}", component_name)
+        )
+
+        response = self.client.responses.create(
+            model=self.model,
+            instructions="You are a DUUI Python code generator. Generate a complete Python FastAPI script. Output ONLY the Python code, no explanations.",
+            input=concat_prompt
+        )
+
+        return response.output_text
+
+
     def llm_generate_hf_context(self, input_user: str) -> dict:
         """
         Generates a context dictionary for HuggingFace model information.
@@ -349,7 +449,7 @@ class LLMWrapper():
             text_format=HFModelInformation
         ).output_parsed 
 
-        return response.dict()
+        return response.model_dump()
 
 
 

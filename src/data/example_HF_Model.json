@@ -1,0 +1,109 @@
+{
+  "model_id": "helinivan/english-sarcasm-detector",
+  "revision": null,
+  "transformers_version": "5.2.0",
+  "torch_available": true,
+  "device_used": "cpu",
+  "model_type": "bert",
+  "architectures": [
+    "BertForSequenceClassification"
+  ],
+  "num_labels": 2,
+  "id2label": {
+    "0": "LABEL_0",
+    "1": "LABEL_1"
+  },
+  "label2id": {
+    "LABEL_0": 0,
+    "LABEL_1": 1
+  },
+  "problem_type": "single_label_classification",
+  "tokenizer_class": "BertTokenizer",
+  "tokenizer_name_or_path": "helinivan/english-sarcasm-detector",
+  "vocab_size": 30522,
+  "model_max_length": 512,
+  "pad_token": "[PAD]",
+  "unk_token": "[UNK]",
+  "cls_token": "[CLS]",
+  "sep_token": "[SEP]",
+  "mask_token": "[MASK]",
+  "inferred_task": "text-classification",
+  "output_semantics_hint": "Sequence-level classification: output logits shape [batch, num_labels].",
+  "recommended_postprocess": "softmax over logits; pick argmax/top-k.",
+  "probe": {
+    "output_is_modeloutput": true,
+    "output_tuple_len": 1,
+    "fields": {
+      "logits": {
+        "shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      },
+      "loss": {
+        "shape": null,
+        "dtype": "None"
+      }
+    },
+    "available_keys": [
+      "logits"
+    ]
+  },
+  "warnings": []
+}
+
+{
+  "model_id": "debajyotimaz/codemix_hate",
+  "revision": null,
+  "transformers_version": "5.2.0",
+  "torch_available": true,
+  "device_used": "cpu",
+  "model_type": "bert",
+  "architectures": [
+    "BertForSequenceClassification"
+  ],
+  "num_labels": 2,
+  "id2label": {
+    "0": "Non-hateful",
+    "1": "Hateful"
+  },
+  "label2id": {
+    "Non-hateful": 0,
+    "Hateful": 1
+  },
+  "problem_type": null,
+  "tokenizer_class": "BertTokenizer",
+  "tokenizer_name_or_path": "debajyotimaz/codemix_hate",
+  "vocab_size": 119547,
+  "model_max_length": 512,
+  "pad_token": "[PAD]",
+  "unk_token": "[UNK]",
+  "cls_token": "[CLS]",
+  "sep_token": "[SEP]",
+  "mask_token": "[MASK]",
+  "inferred_task": "text-classification",
+  "output_semantics_hint": "Sequence-level classification: output logits shape [batch, num_labels].",
+  "recommended_postprocess": "softmax over logits; pick argmax/top-k.",
+  "probe": {
+    "output_is_modeloutput": true,
+    "output_tuple_len": 1,
+    "fields": {
+      "logits": {
+        "shape": [
+          2,
+          2
+        ],
+        "dtype": "torch.float32"
+      },
+      "loss": {
+        "shape": null,
+        "dtype": "None"
+      }
+    },
+    "available_keys": [
+      "logits"
+    ]
+  },
+  "warnings": []
+}

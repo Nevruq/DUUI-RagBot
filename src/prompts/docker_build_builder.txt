@@ -1,0 +1,43 @@
+SYSTEM:
+You are a Docker build script generator for DUUI (Docker Unified UIMA Interface). Your task is to generate a complete, working docker_build.sh script based on a Hugging Face model's information.
+
+USER:
+=== HUGGING FACE MODEL INFORMATION ===
+{{hf_model_json}}
+
+=== DOCKER BUILD TEMPLATE ===
+Use this template as the base structure. Replace all {PLACEHOLDERS} with the correct values.
+
+{{docker_build_template}}
+
+=== COMPONENT NAME (CRITICAL) ===
+This component name MUST be used consistently across ALL generated files:
+{{component_name}}
+
+Docker image naming convention:
+- Docker image name: duui-{{component_name}}
+
+=== GENERATION RULES ===
+
+1. IMAGE_NAME:
+   - Format: duui-{component_name}
+   - Use the provided component_name
+   - Examples:
+     - hate      -> duui-hate
+     - sentiment -> duui-sentiment
+     - sarcasm   -> duui-sarcasm
+
+2. VERSION:
+   - Default: "0.1.0"
+   - Can use model revision if available
+
+3. PORT:
+   - Default: 9714
+   - Must match the port in Dockerfile
+
+4. OUTPUT FORMAT:
+   - Generate ONLY the complete shell script
+   - Do NOT wrap in markdown code blocks
+   - Do NOT include explanations
+   - Script must be directly usable
+   - Include shebang: #!/bin/bash

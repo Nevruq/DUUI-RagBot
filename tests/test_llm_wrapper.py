@@ -9,6 +9,92 @@ sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "src"))
 
 import llm_wrapper
 
+HGF_NSFW_MODEL = {
+
+            "model_id": "eliasalbouzidi/distilbert-nsfw-text-classifier",
+            "revision": None,
+            "transformers_version": "5.2.0",
+            "torch_available": True,
+            "device_used": "cpu",
+            "model_type": "distilbert",
+            "architectures": [
+                "DistilBertForSequenceClassification"
+            ],
+            "num_labels": 2,
+            "id2label": {
+                "0": "safe",
+                "1": "nsfw"
+            },
+            "label2id": {
+                "nsfw": 1,
+                "safe": 0
+            },
+            "problem_type": "single_label_classification",
+            "tokenizer_class": "TokenizersBackend",
+            "tokenizer_name_or_path": "eliasalbouzidi/distilbert-nsfw-text-classifier",
+            "vocab_size": 30522,
+            "model_max_length": 512,
+            "pad_token": "[PAD]",
+            "unk_token": "[UNK]",
+            "cls_token": "[CLS]",
+            "sep_token": "[SEP]",
+            "mask_token": "[MASK]",
+            "inferred_task": "text-classification",
+            "output_semantics_hint": "Sequence-level classification: output logits shape [batch, num_labels].",
+            "recommended_postprocess": "softmax over logits; pick argmax/top-k.",
+            "probe": {
+                "output_is_modeloutput": True,
+                "output_tuple_len": 1,
+                "fields": {
+                "logits": {
+                    "shape": [
+                    2,
+                    2
+                    ],
+                    "dtype": "torch.float32"
+                },
+                "loss": {
+                    "shape": None,
+                    "dtype": "None"
+                }
+                },
+                "available_keys": [
+                "logits"
+                ]
+            },
+            "warnings": []
+            }
+TYPESYSTEM_NSFW =  """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!-- DUUI TypeSystem XML for NSFW text classification -->
+    <typeSystemDescription xmlns="http://uima.apache.org/resourceSpecifier">
+        <name>NSFWTextClassificationTypeSystem</name>
+        <description>TypeSystem for NSFW text classification using eliasalbouzidi/distilbert-nsfw-text-classifier</description>
+        <version>1.0</version>
+
+        <types>
+            <typeDescription>
+                <name>org.texttechnologylab.annotation.NSFW</name>
+                <description>NSFW classification result from eliasalbouzidi/distilbert-nsfw-text-classifier</description>
+                <supertypeName>uima.tcas.Annotation</supertypeName>
+
+                <features>
+                    <featureDescription>
+                        <name>label</name>
+                        <description>Classification label</description>
+                        <rangeTypeName>uima.cas.String</rangeTypeName>
+                    </featureDescription>
+                    <featureDescription>
+                        <name>score</name>
+                        <description>Confidence score (0.0 to 1.0)</description>
+                        <rangeTypeName>uima.cas.Double</rangeTypeName>
+                    </featureDescription>
+                </features>
+            </typeDescription>
+        </types>
+    </typeSystemDescription>            
+"""
+
 
 class TestLLMWrapper(unittest.TestCase):
     def test_init_sets_llm_disabled_from_env(self):
@@ -37,7 +123,6 @@ class TestLLMWrapper(unittest.TestCase):
             input="hi",
         )
 
-
     def test_llm_code_description(self):
         test_file = """
         class Settings(BaseSettings):
@@ -65,8 +150,6 @@ class TestLLMWrapper(unittest.TestCase):
         self.assertIs(type(response), dict)
         self.assertIsNotNone(response["description"])
         self.assertIs(list, type(response["keywords"]))
-
-
 
     def test_llm_rewrite_query(self):
         test_query_1 = """
@@ -153,7 +236,8 @@ class TestLLMWrapper(unittest.TestCase):
 
     def test_typesystem_builder(self):
         llm = llm_wrapper.LLMWrapper()
-        response = llm.llm_typesystem_builder("Baue ein TypeSytem für mein Rede. Sie hat eine redeid ein Text, und wird auf Sentiment untersucht.", "DUUI_v1")
+
+        response = llm.llm_typesystem_builder(hf_model_json=HGF_NSFW_MODEL)
         print(response)
 
     def test_code_description_labels(self):
@@ -162,57 +246,32 @@ class TestLLMWrapper(unittest.TestCase):
         response = llm.llm_code_description()
 
     def test_lua_code_generation(self):
-        """
-        Given a Description of a new Model how, well does the LLM assist in generating the code in lua.
-        
-        :param self: Description
-        """
-        from chunk_data.chunk_lua import chunk_lua_file
-        
         llm = llm_wrapper.LLMWrapper()
-        response = llm.llm_lua_code_builder("Generate a lua code for a new model for sentiment which gets a text and returns a sentiment score, positive neutral and negative which add all to 1", "all_data_v2", ollama_embedding=False)
+        response = llm.llm_lua_code_builder(HGF_NSFW_MODEL, TYPESYSTEM_NSFW)
         print(response)
 
-    def test_HF_model_info(self):
+    def test_gen_dockerfile(self):
         llm = llm_wrapper.LLMWrapper()
-
-        model_input = """{
-            "_name_or_path": "tweeteval_new/roberta-base-rt-sentiment/",
-            "architectures": [
-                "RobertaForSequenceClassification"
-            ],
-            "attention_probs_dropout_prob": 0.1,
-            "bos_token_id": 0,
-            "eos_token_id": 2,
-            "gradient_checkpointing": false,
-            "hidden_act": "gelu",
-            "hidden_dropout_prob": 0.1,
-            "hidden_size": 768,
-            "id2label": {
-                "0": "LABEL_0",
-                "1": "LABEL_1",
-                "2": "LABEL_2"
-            },
-            "initializer_range": 0.02,
-            "intermediate_size": 3072,
-            "label2id": {
-                "LABEL_0": 0,
-                "LABEL_1": 1,
-                "LABEL_2": 2
-            },
-            "layer_norm_eps": 1e-05,
-            "max_position_embeddings": 514,
-            "model_type": "roberta",
-            "num_attention_heads": 12,
-            "num_hidden_layers": 12,
-            "pad_token_id": 1,
-            "type_vocab_size": 1,
-            "vocab_size": 50265
-            }"
-        """
-
-        response = llm.llm_generate_hf_context(input_user=model_input)
+        response = llm.llm_dockerfile_builder(HGF_NSFW_MODEL, "NSFW")
         print(response)
+
+    def test_gen_dockerbuilder(self):
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_docker_build_builder(HGF_NSFW_MODEL, "NSFW")
+        print(response)
+
+    def test_gen_pythonModel(self):
+        llm = llm_wrapper.LLMWrapper()
+        response = llm.llm_python_code_builder(HGF_NSFW_MODEL, "NSFW")
+        print(response)
+
+    def test_lua_script_gen_new(self):
+        llm = llm_wrapper.LLMWrapper()
+        
+        output_lua = llm.llm_lua_code_builder(hf_model_json=HGF_NSFW_MODEL)
+        print(output_lua)
+        self.assertTrue(True)
+
 
 
 if __name__ == "__main__":

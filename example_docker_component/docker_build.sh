@@ -1,17 +1,28 @@
-export ANNOTATOR_NAME=duui-annotator-{{model_name}}
-export ANNOTATOR_VERSION=0.3.0
+#!/bin/bash
+# Minimal Docker build script for DUUI Hate Detection Component
 
-# Models details: anpassen mit Übergabe 
-export MODEL_NAME={{model_name}}
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+IMAGE_NAME="duui-hate-detection"
+VERSION="0.1.0"
+
+echo "Building Docker image: ${IMAGE_NAME}:${VERSION}"
+echo "Build context: ${SCRIPT_DIR}"
+
+# Change to script directory to ensure correct context
+cd "${SCRIPT_DIR}"
 
 docker build \
-  --build-arg ANNOTATOR_NAME \
-  --build-arg ANNOTATOR_VERSION \
-  --build-arg LOG_LEVEL \
-  -t ${DOCKER_REGISTRY}${ANNOTATOR_NAME}${ANNOTATOR_VERSION} \
-  -f "./Dockerfile"$ \
+  -t ${IMAGE_NAME}:${VERSION} \
+  -t ${IMAGE_NAME}:latest \
+  -f Dockerfile \
   .
 
-docker tag \
-  ${ANNOTATOR_NAME}${ANNOTATOR_VERSION} \
-  ${ANNOTATOR_NAME}:latest
+if [ $? -eq 0 ]; then
+    echo "✓ Build successful!"
+    echo "Run with: docker run -p 9714:9714 ${IMAGE_NAME}:latest"
+else
+    echo "✗ Build failed!"
+    exit 1
+fi

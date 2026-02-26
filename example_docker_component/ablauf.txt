@@ -1,4 +1,40 @@
 Hier der Ablauf und alle Datein die generiert werden müssen.
 
-docker_build.sh:
-    -
+Image_Name: Generiere einen Namen der das image indentifiziert und auch als Annoationsname benutzt werden kann
+Model_name : Name des Modells zb. (debajyotimaz/codemix_hate)
+
+docker_build.sh
+    Benötigte Variablen:
+        - Image_Name
+    Kommentar:
+        - Benötigt nur den Namen für das Image, nutzte einfach den allgemeinen Namen
+
+Dockerfile
+    Benötigte Variablen:
+        - Modelname (fürs Downloaden + Entrypoint)
+    Kommentar:
+        - Übernehmen einheitliche Struktur für die Filenamen
+        - Evenutell immer TypeSystem.xml, comm.lua, model.py
+
+TypeSystem
+    Benötigte Variablen:
+        - Type name muss gleich sein wie im lua script
+
+Lua-Script
+    Benötige Variablen:
+        - Labels
+        - Modelname
+
+
+# 1. HuggingFace Model Info holen
+hf_info = scrape_hf_model("debajyotimaz/codemix_hate")
+
+# 2. TypeSystem generieren (ZUERST!)
+typesystem_xml = llm.llm_typesystem_builder(hf_info)
+
+# 3. Lua + Python PARALLEL generieren
+lua_script = llm.llm_lua_code_builder(hf_info, typesystem_xml)
+python_script = llm.llm_python_code_builder(hf_info, typesystem_xml)  # TODO
+
+# 4. Optional: Dockerfile
+dockerfile = llm.llm_dockerfile_builder(python_script)

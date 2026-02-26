@@ -361,49 +361,12 @@ def inspect_hf_model(
 
     return payload
 
-
-def main():
-    """
-    import argparse
-    import json
-
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--model", required=True)
-    ap.add_argument("--revision", default=None)
-    ap.add_argument("--out", default=None)
-    ap.add_argument("--device", default="cpu")
-    ap.add_argument("--local-files-only", action="store_true")
-    args = ap.parse_args()
-
-    result = inspect_hf_model(
-        model_id=args.model,
-        revision=args.revision,
-        device=args.device,
-        local_files_only=args.local_files_only,
-        return_json=False,
-    )
-
-    if args.out:
-        with open(args.out, "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
-    else:
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-    """
 if __name__ == "__main__":
 
-    """
+
     info = inspect_hf_model(
     model_id="sentence-transformers/all-MiniLM-L6-v2"
     )
 
     print(info["inferred_task"])
     print(info["id2label"])
-    """
-    from transformers import AutoConfig, AutoTokenizer, AutoModel, pipeline
-
-    model_id = "cardiffnlp/twitter-roberta-base-sentiment"
-
-    # 1) Config (Architektur/Labels/Task-Info)
-    cfg = AutoConfig.from_pretrained(model_id)
-    print(cfg)
-    print(getattr(cfg, "id2label", None))

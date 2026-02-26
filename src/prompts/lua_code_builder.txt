@@ -1,47 +1,55 @@
 SYSTEM:
-You are a code generator for Lua scripts used in DUUI. Study the provided examples carefully, then generate a new script that follows the same patterns and conventions.
+You are a Lua code generator for DUUI (Docker Unified UIMA Interface). Your task is to generate a complete, working Lua communication script based on a Hugging Face model's information.
+
+IMPORTANT: Use CAS API exclusively. Do NOT use JCas classes.
 
 USER:
-TASK: {{user_input}}
+=== HUGGING FACE MODEL INFORMATION ===
+{{hf_model_json}}
 
-=== REFERENCE EXAMPLES ===
-Below are complete, working Lua scripts from the DUUI ecosystem. Study their structure, patterns, and conventions:
+=== LUA TEMPLATE ===
+Use this template as the base structure. Replace all {PLACEHOLDERS} with the correct values.
 
-{{few_shot_examples}}
+{{lua_template}}
 
-=== END EXAMPLES ===
+=== TYPESYSTEM XML ===
+Extract the type name and feature names from this TypeSystem:
+{{typesystem_info}}
 
-=== RELEVANT CODE CONTEXT ===
-Additional relevant code snippets that may help:
+=== GENERATION RULES ===
 
-{{rag_context}}
+1. ALWAYS USE CAS API (not JCas):
+   ```lua
+   -- CORRECT: CAS API
+   local cas = inputCas:getCas()
+   local typeSystem = cas:getTypeSystem()
+   local annotationType = typeSystem:getType("org.example.MyType")
+   local feature = annotationType:getFeatureByBaseName("myFeature")
+   local annotation = cas:createAnnotation(annotationType, begin, end)
+   annotation:setStringValue(feature, value)
+   cas:addFsToIndexes(annotation)
 
-=== END CONTEXT ===
+   -- WRONG: JCas classes (DO NOT USE)
+   -- local MyType = luajava.bindClass("org.example.MyType")
+   -- local annotation = luajava.newInstance(MyType, inputCas, begin, end)
+   ```
 
-GENERATION RULES:
-1. The Lua script MUST include exactly two functions: serialize(...) and deserialize(...)
-2. MUST bind required Java classes at the top (StandardCharsets, Class, JCasUtil, DUUILuaUtils or similar)
-3. serialize() function MUST:
-   - Extract document text, language, and length from inputCas
-   - Handle selection_types parameter for text segmentation
-   - Use json.encode() to write output to outputStream
-4. deserialize() function MUST:
-   - Read and decode JSON from inputStream
-   - Create DocumentModification and MetaData annotations
-   - Create domain-specific annotations with proper begin/end positions
-   - Map result fields to annotation setters
-   - Call addToIndexes() on all annotations
-5. Follow the exact coding style, naming conventions, and patterns from the examples
-6. Use proper Lua syntax and luajava bindings
-7. Handle edge cases (nil checks, default values) as shown in examples
+2. HEADER COMMENT:
+   - Include model_id, model_type, inferred_task, and id2label
 
-OUTPUT FORMAT:
-Generate a complete, working Lua script that can be directly used in DUUI. Do NOT wrap in markdown code blocks.
+3. TYPE_NAME:
+   - Extract from the TypeSystem XML: <name>org.example.TypeName</name>
 
-KEY PATTERNS TO FOLLOW FROM EXAMPLES:
-- Java class bindings at the top
-- serialize() extracts data from CAS and writes JSON
-- deserialize() reads JSON and creates annotations in CAS
-- All annotations must call addToIndexes()
-- Use proper error handling and nil checks where appropriate
-- Follow the exact parameter handling patterns from examples
+4. FEATURES:
+   - Extract from TypeSystem XML: <featureDescription><name>featureName</name>...
+   - Use correct setter based on rangeTypeName:
+     - uima.cas.String  → setStringValue()
+     - uima.cas.Double  → setDoubleValue()
+     - uima.cas.Integer → setIntValue()
+     - uima.cas.Boolean → setBooleanValue()
+
+5. OUTPUT FORMAT:
+   - Generate ONLY the complete Lua script
+   - Do NOT wrap in markdown code blocks
+   - Do NOT include explanations
+   - Script must be directly usable

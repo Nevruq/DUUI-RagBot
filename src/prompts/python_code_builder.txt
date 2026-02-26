@@ -1,0 +1,142 @@
+SYSTEM:
+You are a Python code generator for DUUI (Docker Unified UIMA Interface). Your task is to generate a complete, working Python FastAPI component based on a Hugging Face model's information.
+
+USER:
+=== HUGGING FACE MODEL INFORMATION ===
+{{hf_model_json}}
+
+=== PYTHON TEMPLATE ===
+Use this template as the base structure. Replace all {PLACEHOLDERS} with the correct values.
+
+{{python_template}}
+
+=== COMPONENT NAME (CRITICAL) ===
+This component name MUST be used consistently across ALL generated files:
+{{component_name}}
+
+File naming convention:
+- Python file:   duui_{{component_name}}.py
+- Lua file:      duui_{{component_name}}.lua
+- Docker image:  duui-{{component_name}}
+
+=== GENERATION RULES ===
+
+1. MODEL_IMPORTS (based on inferred_task):
+   ```python
+   # text-classification:
+   from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+   # token-classification:
+   from transformers import AutoModelForTokenClassification, AutoTokenizer
+
+   # text-generation:
+   from transformers import AutoModelForCausalLM, AutoTokenizer
+   ```
+
+2. MODEL_CLASS (based on inferred_task):
+   - text-classification  -> AutoModelForSequenceClassification
+   - token-classification -> AutoModelForTokenClassification
+   - text-generation      -> AutoModelForCausalLM
+
+3. RESPONSE_MODEL:
+   For text-classification and token-classification:
+   ```python
+   class DUUIResponse(BaseModel):
+       begins: List[int]
+       ends: List[int]
+       labels: List[str]
+       scores: List[float]
+       model_name: str
+   ```
+
+4. PROCESS_LOGIC (based on inferred_task):
+
+   For text-classification:
+   ```python
+   def process(request: DUUIRequest):
+       begins = []
+       ends = []
+       labels = []
+       scores = []
+
+       for selection in request.selections:
+           for sentence in selection.sentences:
+               text = sentence.text
+               inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(device)
+
+               with torch.no_grad():
+                   outputs = model(**inputs)
+                   logits = outputs.logits
+                   probs = torch.softmax(logits, dim=-1)
+                   pred_label_idx = torch.argmax(probs).item()
+                   pred_score = probs[0][pred_label_idx].item()
+
+               label_name = model.config.id2label.get(pred_label_idx, f"LABEL_{pred_label_idx}")
+
+               begins.append(sentence.begin)
+               ends.append(sentence.end)
+               labels.append(label_name)
+               scores.append(pred_score)
+
+       return DUUIResponse(
+           begins=begins,
+           ends=ends,
+           labels=labels,
+           scores=scores,
+           model_name=MODEL_NAME
+       )
+   ```
+
+   For token-classification (NER):
+   ```python
+   def process(request: DUUIRequest):
+       begins = []
+       ends = []
+       labels = []
+       scores = []
+
+       for selection in request.selections:
+           for sentence in selection.sentences:
+               text = sentence.text
+               inputs = tokenizer(text, return_tensors="pt", truncation=True,
+                                  max_length=512, return_offsets_mapping=True)
+               offset_mapping = inputs.pop("offset_mapping")[0].tolist()
+               inputs = {k: v.to(device) for k, v in inputs.items()}
+
+               with torch.no_grad():
+                   outputs = model(**inputs)
+                   logits = outputs.logits
+                   probs = torch.softmax(logits, dim=-1)
+                   predictions = torch.argmax(probs, dim=-1)[0].tolist()
+                   confidence = probs[0].max(dim=-1).values.tolist()
+
+               for idx, (pred_label_idx, score) in enumerate(zip(predictions, confidence)):
+                   if offset_mapping[idx] == (0, 0):
+                       continue
+                   start, end = offset_mapping[idx]
+                   label_name = model.config.id2label.get(pred_label_idx, f"LABEL_{pred_label_idx}")
+
+                   begins.append(sentence.begin + start)
+                   ends.append(sentence.begin + end)
+                   labels.append(label_name)
+                   scores.append(score)
+
+       return DUUIResponse(
+           begins=begins,
+           ends=ends,
+           labels=labels,
+           scores=scores,
+           model_name=MODEL_NAME
+       )
+   ```
+
+5. PORT:
+   - Default: 9714
+   - Must be consistent with Dockerfile and docker_build.sh
+
+6. OUTPUT FORMAT:
+   - Generate ONLY the complete Python script
+   - Do NOT wrap in markdown code blocks
+   - Do NOT include explanations
+   - Script must be directly usable
+   - Use proper Python indentation (4 spaces)
